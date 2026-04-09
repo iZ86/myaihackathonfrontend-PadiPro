@@ -1,6 +1,8 @@
+import { backendServerConfig } from "../../../config/config";
+
 export const getUsersAPI = async (token: string): Promise<Response | undefined> => {
   try {
-    return await fetch("http://localhost:8080/api/v1/users",
+    return await fetch(`${backendServerConfig.backendServerUrl}/api/v1/users`,
       {
         method: 'GET',
         headers: {
