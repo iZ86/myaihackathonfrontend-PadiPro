@@ -1,27 +1,28 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
-import Home from "@routes/Home";
+// import Home from "@routes/Home";
 import User from "@routes/User";
 import SignUp from "@routes/SignUp";
 import Analysis from "@routes/Analysis";
 import DiagnosisResults from "@routes/DiagnosisResults";
-import Products from "@routes/Products";
+// import Products from "@routes/Products";
 import Login from "@routes/Login";
 import Profile from "@routes/Profile";
 import History from "@routes/History";
+import Weather from "@routes/Weather";
 
 const routes = [
   // Guest routes
-  {
-    path: "/home",
-    element: <Home />,
-  },
+  // {
+  //   path: "/home",
+  //   element: <Home />,
+  // },
   {
     path: "/users",
     element: <User />,
   },
   {
     path: "/*",
-    element: <Navigate to="/home" replace />,
+    element: <Navigate to="/weather" replace />,
   },
   {
     path: "/analysis",
@@ -31,10 +32,10 @@ const routes = [
     path: "/diagnosis-results",
     element: <DiagnosisResults />,
   },
-  {
-    path: "/products",
-    element: <Products />,
-  },
+  // {
+  //   path: "/products",
+  //   element: <Products />,
+  // },
   {
     path: "/login",
     element: <Login />,
@@ -50,6 +51,10 @@ const routes = [
   {
     path: "/history",
     element: <History />,
+  },
+  {
+    path: "/weather",
+    element: <Weather />,
   },
 ];
 

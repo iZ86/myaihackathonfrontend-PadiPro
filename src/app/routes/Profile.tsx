@@ -19,7 +19,7 @@ export default function Profile() {
   };
 
   return (
-    <Layout activeTab="profile">
+    <Layout>
       <div className="px-6 max-w-2xl mx-auto">
         {/* Hero Profile Section */}
         <section className="mb-12 text-left mt-4">

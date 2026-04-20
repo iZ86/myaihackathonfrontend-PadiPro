@@ -1,18 +1,22 @@
 import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import { Home, History, ShoppingCart, User, Menu, X, Settings, HelpCircle, LogOut } from "lucide-react";
+import {
+  History,
+  User,
+  Menu,
+  X,
+  // Settings,
+  // HelpCircle,
+  LogOut,
+  Cloud,
+} from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
   title?: string;
-  activeTab?: "home" | "history" | "products" | "profile";
 }
 
-export default function Layout({
-  children,
-  title = "PadiPro",
-  activeTab,
-}: LayoutProps) {
+export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -32,27 +36,46 @@ export default function Layout({
         }`}
       >
         <div className="flex items-center justify-between p-6 pb-2">
-          <h2 className="text-2xl font-bold text-primary font-headline">PadiPro</h2>
+          <h2 className="text-2xl font-bold text-primary font-headline">
+            PadiPro
+          </h2>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors hidden md:flex"
           >
             <X className="w-6 h-6 text-on-surface" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-          <NavLink
+          {/* <NavLink
             to="/home"
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive ? "bg-primary-container text-on-primary-container font-semibold" : "text-on-surface hover:bg-surface-container font-medium"
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
               }`
             }
           >
             <Home className="w-5 h-5" />
             <span>Home</span>
+          </NavLink> */}
+
+          <NavLink
+            to="/weather"
+            onClick={() => setIsSidebarOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
+              }`
+            }
+          >
+            <Cloud className="w-5 h-5" />
+            <span>Weather</span>
           </NavLink>
 
           <NavLink
@@ -60,7 +83,9 @@ export default function Layout({
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive ? "bg-primary-container text-on-primary-container font-semibold" : "text-on-surface hover:bg-surface-container font-medium"
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
               }`
             }
           >
@@ -68,25 +93,29 @@ export default function Layout({
             <span>History</span>
           </NavLink>
 
-          <NavLink
+          {/* <NavLink
             to="/products"
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive ? "bg-primary-container text-on-primary-container font-semibold" : "text-on-surface hover:bg-surface-container font-medium"
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
               }`
             }
           >
             <ShoppingCart className="w-5 h-5" />
             <span>Products</span>
-          </NavLink>
+          </NavLink> */}
 
           <NavLink
             to="/profile"
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive ? "bg-primary-container text-on-primary-container font-semibold" : "text-on-surface hover:bg-surface-container font-medium"
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
               }`
             }
           >
@@ -96,14 +125,14 @@ export default function Layout({
         </div>
 
         <div className="p-4 border-t border-outline-variant space-y-2">
-          <button className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-on-surface hover:bg-surface-container font-medium transition-colors">
+          {/* <button className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-on-surface hover:bg-surface-container font-medium transition-colors">
             <Settings className="w-5 h-5" />
             <span>Settings</span>
-          </button>
-          <button className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-on-surface hover:bg-surface-container font-medium transition-colors">
+          </button> */}
+          {/* <button className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-on-surface hover:bg-surface-container font-medium transition-colors">
             <HelpCircle className="w-5 h-5" />
             <span>Help & Support</span>
-          </button>
+          </button> */}
           <NavLink
             to="/"
             className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-error hover:bg-error-container hover:text-on-error-container font-medium transition-colors mt-2"
@@ -117,12 +146,15 @@ export default function Layout({
       <header className="flex fixed top-0 w-full z-50 glass-nav shadow-sm items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
           <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors hidden md:flex cursor-pointer"
             onClick={() => setIsSidebarOpen(true)}
           >
             <Menu className="hidden md:flex w-6 h-6 text-primary" />
           </button>
-          <NavLink to="/home" className="text-xl font-bold tracking-tight text-primary font-headline">
+          <NavLink
+            to="/weather"
+            className="text-xl font-bold tracking-tight text-primary font-headline"
+          >
             {title}
           </NavLink>
         </div>
@@ -138,61 +170,71 @@ export default function Layout({
         </div>
       </header>
 
-      <main className="flex-1 pt-20 pb-32">
-        {children}
-      </main>
+      <main className="flex-1 pt-20 pb-32">{children}</main>
 
       <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md glass-nav rounded-full z-50 flex justify-around items-center py-3 px-2 shadow-lg">
-          <NavLink
-            to="/home"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-            }
-          >
-            <Home
-              className={`w-6 h-6 ${activeTab === "home" ? "fill-current" : ""}`}
-            />
-            <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-              Home
-            </span>
-          </NavLink>
+        {/* <NavLink
+          to="/home"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <Home
+            className={`w-6 h-6 ${activeTab === "home" ? "fill-current" : ""}`}
+          />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            Home
+          </span>
+        </NavLink> */}
 
-          <NavLink
-            to="/history"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-            }
-          >
-            <History className="w-6 h-6" />
-            <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-              History
-            </span>
-          </NavLink>
+        <NavLink
+          to="/weather"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <Cloud className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            Weather
+          </span>
+        </NavLink>
 
-          <NavLink
-            to="/products"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-            }
-          >
-            <ShoppingCart className="w-6 h-6" />
-            <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-              Products
-            </span>
-          </NavLink>
+        <NavLink
+          to="/history"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <History className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            History
+          </span>
+        </NavLink>
 
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-            }
-          >
-            <User className="w-6 h-6" />
-            <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-              Profile
-            </span>
-          </NavLink>
-        </nav>
+        {/* <NavLink
+          to="/products"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <ShoppingCart className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            Products
+          </span>
+        </NavLink> */}
+
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <User className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            Profile
+          </span>
+        </NavLink>
+      </nav>
     </div>
   );
 }

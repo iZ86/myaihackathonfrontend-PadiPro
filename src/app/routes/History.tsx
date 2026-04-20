@@ -47,7 +47,7 @@ const historyItems = [
 
 export default function History() {
   return (
-    <Layout activeTab="history">
+    <Layout>
       <div className="px-6 max-w-2xl mx-auto">
         {/* Editorial Header Section */}
         <section className="mb-10 mt-4">

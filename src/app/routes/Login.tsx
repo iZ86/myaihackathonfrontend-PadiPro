@@ -8,7 +8,7 @@ export default function Login() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/home");
+    navigate("/weather");
   };
 
   return (
