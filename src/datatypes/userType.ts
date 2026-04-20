@@ -1,4 +1,8 @@
 export type UserData = {
-  userId: number;
-  username: string;
+  name: string;
+  mobile_no: string;
+  coords: {
+    _latitude: number;
+    _longitude: number;
+  };
 };

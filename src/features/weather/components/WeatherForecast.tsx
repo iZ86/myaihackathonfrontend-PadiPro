@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Sun,
@@ -13,14 +13,16 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  Sunrise,
-  Sunset,
-  Zap,
   Cloudy,
   Umbrella,
 } from "lucide-react";
 import type { ForecastDay } from "@datatypes/weatherType";
-import { getWeatherDailyByMobileNoAPI } from "@features/weather/api/weathers";
+import {
+  getWeatherDailyByMobileNoAPI,
+  reverseGeocodeAPI,
+} from "@features/weather/api/weathers";
+import { getUserByMobileNoAPI } from "@features/user/api/users";
+import type { UserData } from "@datatypes/userType";
 
 const getWeatherIcon = (type: string) => {
   switch (type) {
@@ -61,238 +63,277 @@ const formatTime = (isoString?: string) => {
 };
 
 export default function WeatherForecast() {
-  const [data, setData] = useState<ForecastDay[] | null>(null);
+  const [weatherData, setWeatherData] = useState<ForecastDay[] | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [locationName, setLocationName] =
+    useState<string>("Detecting place...");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
-  useEffect(() => {
-    const getWeatherDailyByMobileNo = async (
-      token: string,
-      mobileNo: string,
-    ) => {
-      const response: Response | undefined = await getWeatherDailyByMobileNoAPI(
-        token,
-        mobileNo,
-      );
+  const fetchData = useCallback(async (token: string, mobileNo: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [weatherResponse, userResponse] = await Promise.all([
+        getWeatherDailyByMobileNoAPI(token, mobileNo),
+        getUserByMobileNoAPI(token, mobileNo),
+      ]);
 
-      if (response) {
-        if (response.ok) {
-          const responseJson = await response.json();
-          setData(responseJson.data.forecastDays);
-          setLoading(false);
-          setError(null);
-          return;
-        }
-      } else {
-        console.error("No response received from weather API.");
-        setError("Unable to fetch weather data. Please try again later.");
+      if (!weatherResponse?.ok || !userResponse?.ok) {
+        throw new Error("Unable to sync field data. Check connection.");
       }
 
-      setData([]);
-      setLoading(false);
-    };
+      const weatherJson = await weatherResponse.json();
+      const userJson = await userResponse.json();
 
-    // TODO: Replace with actual token and mobile no.
-    getWeatherDailyByMobileNo("randomToken", "60125821900");
+      setWeatherData(weatherJson.data.forecastDays);
+      setUserData(userJson.data);
+
+      // Start geocoding in background
+      const name = await reverseGeocodeAPI(
+        userJson.data.coords._latitude,
+        userJson.data.coords._longitude,
+      );
+      setLocationName(name);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to fetch weather data.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    // TODO: Replace with authenticated context values
+    fetchData("randomToken", "60125821900");
+  }, [fetchData]);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
-        <p className="font-headline font-bold text-primary">
-          Fetching latest field data...
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        <p className="font-headline font-bold text-primary animate-pulse text-sm">
+          Loading weather data...
         </p>
       </div>
     );
   }
 
-  if (error || !data || data.length === 0) {
+  if (error || !weatherData || weatherData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
         <AlertCircle className="w-12 h-12 text-error" />
         <h2 className="font-headline font-bold text-xl text-on-surface">
-          Oops! Connection Lost
+          Sync Interrupted
         </h2>
-        <p className="text-on-surface-variant max-w-xs">
-          {error || "Unable to update field weather."}
+        <p className="text-on-surface-variant text-sm max-w-60">
+          {error || "Weather data is currently unavailable for this field."}
         </p>
         <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-8 py-3 hero-gradient text-white rounded-full font-bold shadow-lg"
+          onClick={() => fetchData("randomToken", "60125821900")}
+          className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
-          Retry Sync
+          Re-sync Sensors
         </button>
       </div>
     );
   }
 
-  const currentDay = data[0];
+  const currentDay = weatherData[0];
+  const CurrentIcon = getWeatherIcon(
+    currentDay.daytimeForecast.weatherCondition.type,
+  );
 
   return (
-    <>
+    <div className="space-y-6">
       {/* Current Weather Hero */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-4xl p-8 hero-gradient shadow-lg text-white"
+        className="relative overflow-hidden rounded-4xl p-8 hero-gradient shadow-xl text-white"
       >
         <div className="flex justify-between items-start relative z-10">
-          <div>
-            <p className="font-label text-sm uppercase tracking-widest opacity-80 mb-1">
-              Current Forecast
+          <div className="max-w-[70%]">
+            <p className="font-label text-xs uppercase tracking-widest opacity-80 mb-2">
+              Field Monitor
             </p>
-            <h2 className="text-2xl font-bold font-headline mb-4">
-              Kumasi, Ashanti
+            <h2 className="text-2xl font-bold font-headline mb-0.5 leading-tight">
+              {userData?.name ? `${userData.name}'s Estate` : "Local Field"}
             </h2>
-            <div className="flex items-end gap-2 text-white">
+            <p className="text-[10px] font-medium opacity-70 mb-5 tracking-wider uppercase bg-white/10 w-fit px-2 py-0.5 rounded-full">
+              {locationName} • {userData?.coords._latitude.toFixed(3)}°,{" "}
+              {userData?.coords._longitude.toFixed(3)}°
+            </p>
+            <div className="flex items-end gap-3 text-white">
               <span className="text-7xl font-extrabold font-headline leading-none">
                 {Math.round(currentDay.maxTemperature.degrees)}°
               </span>
-              <span className="text-lg font-medium mb-2 capitalize">
-                {currentDay.daytimeForecast.weatherCondition.description.text}
-              </span>
+              <div className="flex flex-col mb-1">
+                <span className="text-sm font-bold opacity-80 line-clamp-1 capitalize">
+                  {currentDay.daytimeForecast.weatherCondition.description.text}
+                </span>
+                {currentDay.maxHeatIndex && (
+                  <span className="text-[10px] font-medium opacity-60">
+                    Feels like {Math.round(currentDay.maxHeatIndex.degrees)}°
+                  </span>
+                )}
+              </div>
             </div>
-            {currentDay.maxHeatIndex && (
-              <p className="text-xs font-medium opacity-80 mt-1">
-                RealFeel® {Math.round(currentDay.maxHeatIndex.degrees)}°
-              </p>
-            )}
           </div>
           <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            animate={{
+              y: [0, -12, 0],
+              rotate: [0, 5, 0],
+            }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="drop-shadow-2xl"
           >
-            {React.createElement(
-              getWeatherIcon(currentDay.daytimeForecast.weatherCondition.type),
-              { className: "w-24 h-24 opacity-90 text-white" },
-            )}
+            <CurrentIcon className="w-24 h-24 text-white p-1" />
           </motion.div>
         </div>
 
-        <div className="mt-8 grid grid-cols-3 gap-4 relative z-10">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-tighter opacity-70">
-              Humidity
-            </span>
-            <div className="flex items-center gap-1 font-bold">
-              <Droplets className="w-4 h-4" />
-              <span>{currentDay.daytimeForecast.relativeHumidity}%</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-tighter opacity-70">
-              Wind
-            </span>
-            <div className="flex items-center gap-1 font-bold">
-              <Wind className="w-4 h-4" />
-              <span>{currentDay.daytimeForecast.wind.speed.value} km/h</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-xs uppercase tracking-tighter opacity-70">
-              Rainfall
-            </span>
-            <div className="flex items-center gap-1 font-bold">
-              <CloudRain className="w-4 h-4" />
-              <span>
-                {currentDay.daytimeForecast.precipitation.qpf.quantity} mm
+        <div className="mt-10 grid grid-cols-3 gap-6 relative z-10 border-t border-white/10 pt-6">
+          {[
+            {
+              label: "Humidity",
+              value: `${currentDay.daytimeForecast.relativeHumidity}%`,
+              icon: Droplets,
+            },
+            {
+              label: "Wind",
+              value: `${currentDay.daytimeForecast.wind.speed.value} km/h`,
+              icon: Wind,
+            },
+            {
+              label: "Rainfall",
+              value: `${currentDay.daytimeForecast.precipitation.qpf.quantity} mm`,
+              icon: CloudRain,
+            },
+          ].map((stat, idx) => (
+            <div
+              key={idx}
+              className="flex flex-col gap-1.5 group cursor-default"
+            >
+              <span className="text-[9px] uppercase font-bold tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">
+                {stat.label}
               </span>
+              <div className="flex items-center gap-1.5 font-bold">
+                <stat.icon className="w-3.5 h-3.5 text-primary-fixed" />
+                <span className="text-sm">{stat.value}</span>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
 
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+        {/* Ambient background blur circles */}
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-white/10 rounded-full blur-[80px]"></div>
+        <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-primary-fixed/20 rounded-full blur-[60px]"></div>
       </motion.section>
 
       {/* Agricultural Insights Card */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-primary-fixed p-6 rounded-2xl shadow-sm space-y-4"
+        className="bg-primary/5 p-6 rounded-3xl border border-primary/10 space-y-4"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-on-primary-fixed rounded-lg text-primary-fixed">
+          <div className="p-2.5 bg-primary rounded-2xl text-white shadow-lg shadow-primary/20">
             <Sprout className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-headline font-bold text-on-primary-fixed">
-            Agronomic Advice
-          </h3>
+          <div>
+            <h3 className="text-lg font-headline font-bold text-primary leading-tight">
+              Agronomic Advice
+            </h3>
+            <p className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">
+              Smart Sensor Insights
+            </p>
+          </div>
         </div>
-        <p className="text-on-primary-fixed-variant text-sm leading-relaxed">
-          {currentDay.daytimeForecast.relativeHumidity > 75
-            ? `High humidity (${currentDay.daytimeForecast.relativeHumidity}%) increases vulnerability to fungal growth. Consider preventive measures.`
-            : "Conditions are stable for crop maintenance. Morning humidity is within optimal ranges."}
-        </p>
-        <div className="flex items-center gap-2 text-on-primary-fixed-variant font-bold text-xs uppercase tracking-wider">
-          <AlertCircle className="w-4 h-4" />
-          <span>
-            {currentDay.daytimeForecast.precipitation.probability.percent > 50
-              ? "Delay fertilization due to high rain probability"
-              : "Ideal window for Nitrogen application"}
-          </span>
+        <div className="bg-white/50 p-4 rounded-2xl space-y-3">
+          <p className="text-on-surface-variant text-xs leading-relaxed font-medium">
+            {currentDay.daytimeForecast.relativeHumidity > 75
+              ? `Extreme humidity detected (${currentDay.daytimeForecast.relativeHumidity}%). High risk of sheath blight. Recommend urgent fungicidal surveillance.`
+              : "Ideal humidity levels for physiological crop growth. Nutrient uptake is currently optimal."}
+          </p>
+          <div className="flex items-center gap-2.5 text-primary font-bold text-[11px] bg-primary/10 w-fit px-3 py-1.5 rounded-full border border-primary/10">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>
+              {currentDay.daytimeForecast.precipitation.probability.percent > 50
+                ? "Weather Warning: Postpone immediate spraying"
+                : "Weather Stable: Perfect nitrogen window"}
+            </span>
+          </div>
         </div>
       </motion.section>
 
       {/* Daily Forecast List */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="space-y-6 pb-8"
+        className="space-y-4 pb-8"
       >
         <div className="flex justify-between items-center px-2">
           <h3 className="font-headline font-bold text-xl text-primary">
-            Daily Forecast
+            Weekly Outlook
           </h3>
-          <span className="text-[10px] uppercase font-bold text-outline-variant">
-            Next {data.length} Days
+          <span className="text-[10px] uppercase font-bold text-outline-variant bg-surface-container-low px-2 py-1 rounded-md">
+            {weatherData?.length} Day Tracker
           </span>
         </div>
-        <div className="space-y-4 px-1">
-          {data.map((item, i) => {
+
+        <div className="space-y-4">
+          {weatherData?.map((item, i) => {
             const isExpanded = expandedDay === i;
+            const DayIcon = getWeatherIcon(
+              item.daytimeForecast.weatherCondition.type,
+            );
 
             return (
               <div
                 key={i}
-                className={`bg-white rounded-3xl shadow-sm border border-surface-container overflow-hidden transition-all duration-300 ${isExpanded ? "ring-2 ring-primary/20" : ""}`}
+                className={`bg-white rounded-3xl shadow-sm border border-surface-container overflow-hidden transition-all duration-500 hover:shadow-md ${isExpanded ? "ring-2 ring-primary/20 bg-surface-container-low/20" : ""}`}
               >
                 <button
                   onClick={() => setExpandedDay(isExpanded ? null : i)}
-                  className="w-full flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors text-left cursor-pointer"
+                  className="w-full flex items-center justify-between p-5 hover:bg-surface-container-low/50 transition-colors text-left cursor-pointer"
                 >
                   <div className="flex items-center gap-4 w-1/3">
-                    <span className="font-bold text-on-surface text-sm">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isExpanded ? "bg-primary text-white" : "bg-surface-container text-primary"}`}
+                    >
+                      <span className="font-bold text-[11px] uppercase">
+                        {getDayName(item.displayDate, i).slice(0, 3)}
+                      </span>
+                    </div>
+                    <span className="font-bold text-on-surface text-sm hidden sm:inline">
                       {getDayName(item.displayDate, i)}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 w-1/3 justify-center">
-                    {React.createElement(
-                      getWeatherIcon(
-                        currentDay.daytimeForecast.weatherCondition.type,
-                      ),
-                      { className: "w-6 h-6 text-primary" },
-                    )}
-                    <span className="text-xs font-medium text-on-surface-variant hidden md:inline truncate capitalize">
+                    <DayIcon
+                      className={`w-6 h-6 transition-transform duration-500 ${isExpanded ? "scale-110" : ""} text-primary`}
+                    />
+                    <span className="text-xs font-bold text-on-surface-variant hidden md:inline truncate capitalize opacity-70">
                       {item.daytimeForecast.weatherCondition.description.text}
                     </span>
                   </div>
                   <div className="flex items-center justify-end gap-5 w-1/3">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-on-surface">
+                      <span className="font-bold text-on-surface text-sm">
                         {Math.round(item.maxTemperature.degrees)}°
                       </span>
+                      <div className="w-0.5 h-4 bg-surface-container"></div>
                       <span className="text-outline font-medium text-xs">
                         {Math.round(item.minTemperature.degrees)}°
                       </span>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-outline" />
+                      <ChevronUp className="w-5 h-5 text-primary" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-outline" />
+                      <ChevronDown className="w-5 h-5 text-outline transition-transform duration-300 group-hover:translate-y-0.5" />
                     )}
                   </div>
                 </button>
@@ -303,168 +344,153 @@ export default function WeatherForecast() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="border-t border-surface-container bg-surface-container-low/30"
+                      transition={{ duration: 0.4, ease: "circOut" }}
+                      className="border-t border-surface-container"
                     >
-                      <div className="p-6 space-y-6">
+                      <div className="p-6 space-y-6 bg-surface-container-low/40">
                         {/* Weather Detail Grid */}
-                        <div className="grid grid-cols-2 gap-6">
-                          {/* Day & Night Comparison */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
+                                Day Cycles
+                              </span>
+                              <Sun className="w-4 h-4 text-amber-500" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                Sunrise
+                              </span>
+                              <span className="text-xs font-bold text-primary">
+                                {formatTime(item.sunEvents?.sunriseTime)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                Sunset
+                              </span>
+                              <span className="text-xs font-bold text-primary">
+                                {formatTime(item.sunEvents?.sunsetTime)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
+                                Risk Factors
+                              </span>
+                              <AlertCircle className="w-4 h-4 text-error/60" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                UV Index
+                              </span>
+                              <span className="text-xs font-bold text-primary">
+                                {item.daytimeForecast.uvIndex ?? 0}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-on-surface-variant">
+                                Storm %
+                              </span>
+                              <span className="text-xs font-bold text-primary">
+                                {item.daytimeForecast.thunderstormProbability ??
+                                  0}
+                                %
+                              </span>
+                            </div>
+                          </div>
+
                           <div className="col-span-2 grid grid-cols-2 gap-4">
-                            <div className="bg-white p-4 rounded-2xl flex flex-col gap-2">
+                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3 group">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Daytime
+                                Day Dynamics
                               </span>
                               <div className="flex items-center justify-between">
-                                {item.daytimeForecast.weatherCondition.type.includes(
-                                  "SUN",
-                                ) ? (
-                                  <Sun className="w-5 h-5 text-amber-500" />
-                                ) : (
-                                  <Cloudy className="w-5 h-5 text-primary" />
-                                )}
-                                <span className="font-bold text-on-surface">
-                                  {Math.round(item.maxTemperature.degrees)}°
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className="text-lg font-extrabold text-on-surface">
+                                    {Math.round(item.maxTemperature.degrees)}°
+                                  </span>
+                                  <span className="text-[10px] font-bold text-outline uppercase">
+                                    {
+                                      item.daytimeForecast.weatherCondition
+                                        .description.text
+                                    }
+                                  </span>
+                                </div>
+                                <Umbrella className="w-6 h-6 text-primary/40 group-hover:text-primary transition-colors" />
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                                <Umbrella className="w-3 h-3" />
-                                <span>
-                                  {
-                                    item.daytimeForecast.precipitation
-                                      .probability.percent
-                                  }
-                                  % Chance
-                                </span>
-                              </div>
+                              <p className="text-[10px] font-bold text-primary">
+                                {
+                                  item.daytimeForecast.precipitation.probability
+                                    .percent
+                                }
+                                % Precip Probability
+                              </p>
                             </div>
-                            <div className="bg-white p-4 rounded-2xl flex flex-col gap-2">
+
+                            <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3 group">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Nighttime
+                                Night Shift
                               </span>
                               <div className="flex items-center justify-between">
-                                <Cloud className="w-5 h-5 text-primary" />
-                                <span className="font-bold text-on-surface">
-                                  {Math.round(item.minTemperature.degrees)}°
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className="text-lg font-extrabold text-on-surface">
+                                    {Math.round(item.minTemperature.degrees)}°
+                                  </span>
+                                  <span className="text-[10px] font-bold text-outline uppercase">
+                                    {
+                                      item.nighttimeForecast.weatherCondition
+                                        .description.text
+                                    }
+                                  </span>
+                                </div>
+                                <Cloud className="w-6 h-6 text-primary/40 group-hover:text-primary transition-colors" />
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
-                                <Umbrella className="w-3 h-3" />
-                                <span>
-                                  {
-                                    item.nighttimeForecast.precipitation
-                                      .probability.percent
-                                  }
-                                  % Chance
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Detailed Metrics */}
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white rounded-xl shadow-xs">
-                                <Sun className="w-4 h-4 text-amber-500" />
-                              </div>
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  UV Index
-                                </p>
-                                <p className="text-sm font-bold">
-                                  {item.daytimeForecast.uvIndex ?? 0} High
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white rounded-xl shadow-xs">
-                                <Cloudy className="w-4 h-4 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  Cloud Cover
-                                </p>
-                                <p className="text-sm font-bold">
-                                  {item.daytimeForecast.cloudCover ?? 0}%
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white rounded-xl shadow-xs">
-                                <Zap className="w-4 h-4 text-amber-600" />
-                              </div>
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  Thunderstorm Chance
-                                </p>
-                                <p className="text-sm font-bold">
-                                  {item.daytimeForecast
-                                    .thunderstormProbability ?? 0}
-                                  %
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white rounded-xl shadow-xs">
-                                <Wind className="w-4 h-4 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  Wind Speed
-                                </p>
-                                <p className="text-sm font-bold">
-                                  {item.daytimeForecast.wind.speed.value}{" "}
-                                  {item.daytimeForecast.wind.speed.unit ===
-                                  "KILOMETERS_PER_HOUR"
-                                    ? "km/h"
-                                    : item.daytimeForecast.wind.speed.unit}
-                                </p>
-                              </div>
+                              <p className="text-[10px] font-bold text-primary">
+                                {
+                                  item.nighttimeForecast.precipitation
+                                    .probability.percent
+                                }
+                                % Precip Probability
+                              </p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Sun Events */}
-                        {item.sunEvents && (
-                          <div className="bg-white p-4 rounded-2xl flex justify-around items-center border border-surface-container/50">
-                            <div className="flex items-center gap-3">
-                              <Sunrise className="w-5 h-5 text-amber-500" />
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  Sunrise
-                                </p>
-                                <p className="text-xs font-bold">
-                                  {formatTime(item.sunEvents.sunriseTime)}
-                                </p>
-                              </div>
+                        {/* Agri Metric List */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            {
+                              icon: Wind,
+                              label: "Wind",
+                              value: `${item.daytimeForecast.wind.speed.value} km/h`,
+                            },
+                            {
+                              icon: Cloudy,
+                              label: "Clouds",
+                              value: `${item.daytimeForecast.cloudCover ?? 0}%`,
+                            },
+                            {
+                              icon: Droplets,
+                              label: "Prec.",
+                              value: `${item.daytimeForecast.precipitation.qpf.quantity}mm`,
+                            },
+                          ].map((stat, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-primary/5 p-3 rounded-2xl flex flex-col items-center text-center gap-1 border border-primary/5"
+                            >
+                              <stat.icon className="w-3.5 h-3.5 text-primary" />
+                              <span className="text-[9px] uppercase font-bold text-primary/60">
+                                {stat.label}
+                              </span>
+                              <span className="text-xs font-bold text-primary">
+                                {stat.value}
+                              </span>
                             </div>
-                            <div className="w-px h-8 bg-surface-container"></div>
-                            <div className="flex items-center gap-3">
-                              <Sunset className="w-5 h-5 text-amber-600" />
-                              <div>
-                                <p className="text-[10px] uppercase font-bold text-outline">
-                                  Sunset
-                                </p>
-                                <p className="text-xs font-bold">
-                                  {formatTime(item.sunEvents.sunsetTime)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Quick Agri Tip */}
-                        <div className="bg-primary/5 p-4 rounded-xl flex items-center gap-3">
-                          <AlertCircle className="w-4 h-4 text-primary" />
-                          <p className="text-[11px] text-primary font-medium">
-                            {item.daytimeForecast.uvIndex &&
-                            item.daytimeForecast.uvIndex > 7
-                              ? "Extreme UV today. Advise field workers to prioritize shaded tasks between 11 AM - 3 PM."
-                              : "Optimal conditions for general crop maintenance."}
-                          </p>
+                          ))}
                         </div>
                       </div>
                     </motion.div>
@@ -475,6 +501,6 @@ export default function WeatherForecast() {
           })}
         </div>
       </motion.section>
-    </>
+    </div>
   );
 }
