@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
 import {
   User as UserIcon,
@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Sprout,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { UserData } from "@datatypes/userType";
@@ -17,38 +18,45 @@ import { reverseGeocodeAPI } from "@features/weather/api/weathers";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [locationName, setLocationName] = useState<string>(
     "Loading location...",
   );
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const getDatas = useCallback(async (token: string, mobileNo: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userResponse = await getUserByMobileNoAPI(token, mobileNo);
+
+      if (!userResponse?.ok) {
+        throw new Error("Unable to sync user data. Check connection.");
+      }
+
+      const userJson = await userResponse.json();
+
+      setUserData(userJson.data);
+
+      // Start geocoding in background
+      const name = await reverseGeocodeAPI(
+        userJson.data.coords._latitude,
+        userJson.data.coords._longitude,
+      );
+      setLocationName(name);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError("Failed to fetch user data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const getUserByMobileNo = async () => {
-      try {
-        const response: Response | undefined = await getUserByMobileNoAPI(
-          "randomToken",
-          "60125821900",
-        );
-        if (response && response.ok) {
-          const json = await response.json();
-          setUser(json.data);
-
-          // Use the new modular reverse geocoding API
-          const locationName = await reverseGeocodeAPI(
-            json.data.coords._latitude,
-            json.data.coords._longitude,
-          );
-          setLocationName(locationName);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getUserByMobileNo();
-  }, []);
+    // TODO: Replace with authenticated context values
+    getDatas("randomToken", "60125821900");
+  }, [getDatas]);
 
   const handleLogout = () => {
     navigate("/login");
@@ -65,6 +73,26 @@ export default function Profile() {
     );
   }
 
+  if (error || !userData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
+        <AlertCircle className="w-12 h-12 text-error" />
+        <h2 className="font-headline font-bold text-xl text-on-surface">
+          Sync Interrupted
+        </h2>
+        <p className="text-on-surface-variant text-sm max-w-60">
+          {error || "User data is currently unavailable."}
+        </p>
+        <button
+          onClick={() => getDatas("randomToken", "60125821900")}
+          className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
+        >
+          Re-sync Sensors
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Hero Profile Section */}
@@ -73,7 +101,7 @@ export default function Profile() {
           Agricultural Lead
         </span>
         <h1 className="text-4xl font-extrabold text-on-surface mb-2 font-headline">
-          {user?.name || "Isaac"}
+          {userData?.name || "Isaac"}
         </h1>
         <p className="text-on-surface-variant font-body">
           Managing PadiPro Estates • Premium Member
@@ -97,8 +125,7 @@ export default function Profile() {
           </div>
           <div className="space-y-4">
             {[
-              { label: "Email", value: "isaac@padipro.com" },
-              { label: "Phone", value: user?.mobile_no || "+60125821900" },
+              { label: "Phone", value: userData?.mobile_no || "+60125821900" },
               { label: "Farm Location", value: locationName },
             ].map((item, i) => (
               <div
