@@ -71,7 +71,7 @@ export default function WeatherForecast() {
   const [error, setError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
-  const fetchData = useCallback(async (token: string, mobileNo: string) => {
+  const getDatas = useCallback(async (token: string, mobileNo: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -106,8 +106,8 @@ export default function WeatherForecast() {
 
   useEffect(() => {
     // TODO: Replace with authenticated context values
-    fetchData("randomToken", "60125821900");
-  }, [fetchData]);
+    getDatas("randomToken", "60125821900");
+  }, [getDatas]);
 
   if (loading) {
     return (
@@ -131,7 +131,7 @@ export default function WeatherForecast() {
           {error || "Weather data is currently unavailable for this field."}
         </p>
         <button
-          onClick={() => fetchData("randomToken", "60125821900")}
+          onClick={() => getDatas("randomToken", "60125821900")}
           className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
           Re-sync Sensors
