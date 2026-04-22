@@ -22,10 +22,11 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@routes/*": ["./src/app/routes/*"],
-      "@images/*" : ["./src/assets/images/*"],
+      "@images/*": ["./src/assets/images/*"],
       "@components/*": ["./src/components/*"],
       "@features/*": ["./src/features/*"],
       "@datatypes/*": ["./src/datatypes/*"],
+      "@context/*": ["./src/context/*"]
     }
   },
   "include": ["src"]
