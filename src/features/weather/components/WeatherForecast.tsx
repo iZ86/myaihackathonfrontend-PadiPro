@@ -17,12 +17,8 @@ import {
   Umbrella,
 } from "lucide-react";
 import type { ForecastDay } from "@datatypes/weatherType";
-import {
-  getWeatherDailyByMobileNoAPI,
-  reverseGeocodeAPI,
-} from "@features/weather/api/weathers";
-import { getUserByMobileNoAPI } from "@features/user/api/users";
-import type { UserData } from "@datatypes/userType";
+import { getWeatherDailyByMobileNoAPI } from "@features/weather/api/weathers";
+import { useAuth } from "@context/useAuth";
 
 const getWeatherIcon = (type: string) => {
   switch (type) {
@@ -63,10 +59,8 @@ const formatTime = (isoString?: string) => {
 };
 
 export default function WeatherForecast() {
+  const { user } = useAuth();
   const [weatherData, setWeatherData] = useState<ForecastDay[] | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [locationName, setLocationName] =
-    useState<string>("Detecting place...");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
@@ -75,27 +69,18 @@ export default function WeatherForecast() {
     setLoading(true);
     setError(null);
     try {
-      const [weatherResponse, userResponse] = await Promise.all([
-        getWeatherDailyByMobileNoAPI(token, mobileNo),
-        getUserByMobileNoAPI(token, mobileNo),
-      ]);
+      const weatherResponse = await getWeatherDailyByMobileNoAPI(
+        token,
+        mobileNo,
+      );
 
-      if (!weatherResponse?.ok || !userResponse?.ok) {
+      if (!weatherResponse?.ok) {
         throw new Error("Unable to sync field data. Check connection.");
       }
 
       const weatherJson = await weatherResponse.json();
-      const userJson = await userResponse.json();
 
       setWeatherData(weatherJson.data.forecastDays);
-      setUserData(userJson.data);
-
-      // Start geocoding in background
-      const name = await reverseGeocodeAPI(
-        userJson.data.coords._latitude,
-        userJson.data.coords._longitude,
-      );
-      setLocationName(name);
     } catch (err) {
       console.error("Fetch error:", err);
       setError("Failed to fetch weather data.");
@@ -106,8 +91,9 @@ export default function WeatherForecast() {
 
   useEffect(() => {
     // TODO: Replace with authenticated context values
-    getDatas("randomToken", "60125821900");
-  }, [getDatas]);
+    if (!user) return;
+    getDatas("randomToken", user.mobile_no);
+  }, [getDatas, user]);
 
   if (loading) {
     return (
@@ -159,11 +145,11 @@ export default function WeatherForecast() {
               Field Monitor
             </p>
             <h2 className="text-2xl font-bold font-headline mb-0.5 leading-tight">
-              {userData?.name ? `${userData.name}'s Estate` : "Local Field"}
+              {user?.name ? `${user.name}'s Estate` : "Local Field"}
             </h2>
             <p className="text-[10px] font-medium opacity-70 mb-5 tracking-wider uppercase bg-white/10 w-fit px-2 py-0.5 rounded-full">
-              {locationName} • {userData?.coords._latitude.toFixed(3)}°,{" "}
-              {userData?.coords._longitude.toFixed(3)}°
+              {user?.location} • {user?.coords._latitude.toFixed(3)}°,{" "}
+              {user?.coords._longitude.toFixed(3)}°
             </p>
             <div className="flex items-end gap-3 text-white">
               <span className="text-7xl font-extrabold font-headline leading-none">

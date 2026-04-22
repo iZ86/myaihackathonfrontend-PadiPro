@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { getDiagnosisHistoryAPI } from "@features/history/api/history";
 import type { HistoryItem } from "@datatypes/historyType";
+import { useAuth } from "@context/useAuth";
 
 const getDummyMetadata = (index: number) => {
   const statuses = [
@@ -66,6 +67,7 @@ const formatDate = (isoString: string) => {
 };
 
 export default function History() {
+  const { user } = useAuth();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +105,10 @@ export default function History() {
 
   useEffect(() => {
     // TODO: Replace with authenticated context values
-    getDatas("randomToken", "60125821900");
-  }, [getDatas]);
+    if (!user || !user.mobile_no) return;
+
+    getDatas("randomToken", user.mobile_no);
+  }, [getDatas, user]);
 
   if (loading) {
     return (
@@ -128,7 +132,7 @@ export default function History() {
           {error || "History data is currently unavailable for this field."}
         </p>
         <button
-          onClick={() => getDatas("randomToken", "60125821900")}
+          onClick={() => user && getDatas("randomToken", user.mobile_no)}
           className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
           Re-sync Sensors

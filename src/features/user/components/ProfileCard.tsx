@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { motion } from "motion/react";
 import {
   User as UserIcon,
@@ -12,53 +12,20 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import type { UserData } from "@datatypes/userType";
-import { getUserByMobileNoAPI } from "@features/user/api/users";
-import { reverseGeocodeAPI } from "@features/weather/api/weathers";
+import { useAuth } from "@context/useAuth";
 
 export default function Profile() {
+  const { loading, user, logout } = useAuth();
   const navigate = useNavigate();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [locationName, setLocationName] = useState<string>(
-    "Loading location...",
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const getDatas = useCallback(async (token: string, mobileNo: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const userResponse = await getUserByMobileNoAPI(token, mobileNo);
-
-      if (!userResponse?.ok) {
-        throw new Error("Unable to sync user data. Check connection.");
-      }
-
-      const userJson = await userResponse.json();
-
-      setUserData(userJson.data);
-
-      // Start geocoding in background
-      const name = await reverseGeocodeAPI(
-        userJson.data.coords._latitude,
-        userJson.data.coords._longitude,
-      );
-      setLocationName(name);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Failed to fetch user data.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     // TODO: Replace with authenticated context values
-    getDatas("randomToken", "60125821900");
-  }, [getDatas]);
+    if (!user || !user.mobile_no) return;
+    // getDatas("randomToken", user.mobile_no);
+  }, [user]);
 
   const handleLogout = () => {
+    logout();
     navigate("/login");
   };
 
@@ -73,7 +40,7 @@ export default function Profile() {
     );
   }
 
-  if (error || !userData) {
+  if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
         <AlertCircle className="w-12 h-12 text-error" />
@@ -81,10 +48,10 @@ export default function Profile() {
           Sync Interrupted
         </h2>
         <p className="text-on-surface-variant text-sm max-w-60">
-          {error || "User data is currently unavailable."}
+          "User data is currently unavailable."
         </p>
         <button
-          onClick={() => getDatas("randomToken", "60125821900")}
+          onClick={() => user}
           className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
           Re-sync Sensors
@@ -101,7 +68,7 @@ export default function Profile() {
           Agricultural Lead
         </span>
         <h1 className="text-4xl font-extrabold text-on-surface mb-2 font-headline">
-          {userData?.name || "Isaac"}
+          {user?.name || "PadiPro User"}
         </h1>
         <p className="text-on-surface-variant font-body">
           Managing PadiPro Estates • Premium Member
@@ -125,8 +92,8 @@ export default function Profile() {
           </div>
           <div className="space-y-4">
             {[
-              { label: "Phone", value: userData?.mobile_no || "+60125821900" },
-              { label: "Farm Location", value: locationName },
+              { label: "Phone", value: user?.mobile_no || "" },
+              { label: "Farm Location", value: user?.location || "Unknown" },
             ].map((item, i) => (
               <div
                 key={i}
@@ -203,7 +170,7 @@ export default function Profile() {
       {/* Logout Action */}
       <button
         onClick={handleLogout}
-        className="w-full mt-8 flex items-center justify-center gap-3 py-4 bg-surface-container-high text-error font-bold rounded-xl active:scale-[0.98] transition-all hover:bg-error-container"
+        className="w-full mt-8 flex items-center justify-center gap-3 py-4 bg-surface-container-high text-error font-bold rounded-xl active:scale-[0.98] transition-all hover:bg-error-container cursor-pointer"
       >
         <LogOut className="w-5 h-5" />
         Log Out

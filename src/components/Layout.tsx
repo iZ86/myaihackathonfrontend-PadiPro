@@ -10,6 +10,7 @@ import {
   LogOut,
   Cloud,
 } from "lucide-react";
+import { useAuth } from "@context/useAuth";
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
+  const { logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -134,7 +136,8 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <span>Help & Support</span>
           </button> */}
           <NavLink
-            to="/"
+            to="/login"
+            onClick={logout}
             className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-error hover:bg-error-container hover:text-on-error-container font-medium transition-colors mt-2"
           >
             <LogOut className="w-5 h-5" />
