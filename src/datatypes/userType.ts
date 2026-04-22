@@ -5,4 +5,5 @@ export type UserData = {
     _latitude: number;
     _longitude: number;
   };
+  location?: string;
 };

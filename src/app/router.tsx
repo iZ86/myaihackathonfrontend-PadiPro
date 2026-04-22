@@ -1,60 +1,77 @@
-import { createBrowserRouter, Navigate, RouterProvider } from "react-router";
-// import Home from "@routes/Home";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+} from "react-router";
 import User from "@routes/User";
-import SignUp from "@routes/SignUp";
 import Analysis from "@routes/Analysis";
 import DiagnosisResults from "@routes/DiagnosisResults";
-// import Products from "@routes/Products";
 import Login from "@routes/Login";
 import Profile from "@routes/Profile";
 import History from "@routes/History";
 import Weather from "@routes/Weather";
+import AuthProvider from "@context/AuthProvider";
+// import Home from "@routes/Home";
+// import SignUp from "@routes/SignUp";
+// import Products from "@routes/Products";
+
+const AuthLayout = () => (
+  <AuthProvider>
+    <Outlet />
+  </AuthProvider>
+);
 
 const routes = [
-  // Guest routes
-  // {
-  //   path: "/home",
-  //   element: <Home />,
-  // },
   {
-    path: "/users",
-    element: <User />,
-  },
-  {
-    path: "/*",
-    element: <Navigate to="/weather" replace />,
-  },
-  {
-    path: "/analysis",
-    element: <Analysis />,
-  },
-  {
-    path: "/diagnosis-results",
-    element: <DiagnosisResults />,
-  },
-  // {
-  //   path: "/products",
-  //   element: <Products />,
-  // },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <SignUp />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
-    path: "/history",
-    element: <History />,
-  },
-  {
-    path: "/weather",
-    element: <Weather />,
+    path: "/",
+    element: <AuthLayout />,
+    children: [
+      {
+        path: "/login",
+        element: <Login />,
+      },
+      {
+        path: "/users",
+        element: <User />,
+      },
+      {
+        path: "/*",
+        element: <Navigate to="/weather" replace />,
+      },
+      {
+        path: "/analysis",
+        element: <Analysis />,
+      },
+      {
+        path: "/diagnosis-results",
+        element: <DiagnosisResults />,
+      },
+      {
+        path: "/profile",
+        element: <Profile />,
+      },
+      {
+        path: "/history",
+        element: <History />,
+      },
+      {
+        path: "/weather",
+        element: <Weather />,
+      },
+      // {
+      //   path: "/products",
+      //   element: <Products />,
+      // },
+      // {
+      //   path: "/signup",
+      //   element: <SignUp />,
+      // },
+      // {
+      //   path: "/home",
+      //   element: <Home />,
+      // },
+    ],
   },
 ];
 
