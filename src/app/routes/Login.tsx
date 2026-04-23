@@ -83,15 +83,6 @@ export default function Login() {
         className="w-full max-w-md bg-surface shadow-2xl rounded-3xl overflow-hidden flex flex-col h-203"
       >
         <section className="hero-gradient h-[40%] flex flex-col items-center justify-center p-8 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20 mix-blend-overlay">
-            <img
-              src="https://images.unsplash.com/photo-1536647167699-0a6ea1b43343?q=80&w=2670&auto=format&fit=crop"
-              alt="Paddy Field"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-
           <div className="relative z-10 flex flex-col items-center space-y-4 text-center">
             <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-lg">
               <Leaf className="w-10 h-10 text-primary-fixed" />
