@@ -90,9 +90,8 @@ export default function WeatherForecast() {
   }, []);
 
   useEffect(() => {
-    // TODO: Replace with authenticated context values
     if (!user) return;
-    getDatas("randomToken", user.mobile_no);
+    if (user) getDatas("randomToken", user.mobile_no);
   }, [getDatas, user]);
 
   if (loading) {

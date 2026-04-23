@@ -19,9 +19,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // TODO: Replace with authenticated context values
     if (!user || !user.mobile_no) return;
-    // getDatas("randomToken", user.mobile_no);
   }, [user]);
 
   const handleLogout = () => {
