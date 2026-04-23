@@ -25,8 +25,11 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
           ...json.data,
           location,
         });
-      } else {
+      } else if (response && response.status >= 400 && response.status < 500) {
         localStorage.removeItem("mobile_no");
+        setUser(null);
+      } else {
+        console.warn("Server error or network issue. Session preserved.");
         setUser(null);
       }
     } catch (err) {
