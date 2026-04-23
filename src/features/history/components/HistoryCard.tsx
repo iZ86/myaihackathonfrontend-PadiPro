@@ -12,39 +12,6 @@ import type { HistoryItem } from "@datatypes/historyType";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
 
-const getDiagnosisMetadata = (item: HistoryItem) => {
-  const diagnosis = item.diagnosis || "UNKNOWN";
-  const severity = item.severity || 0;
-
-  if (diagnosis === "HEALTHY") {
-    return {
-      title: "Healthy Crop",
-      status: "Excellent",
-      statusColor: "bg-primary",
-      statusBg: "bg-primary-fixed",
-      statusText: "text-on-primary-fixed-variant",
-    };
-  }
-
-  if (severity > 0.5) {
-    return {
-      title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
-      status: "Critical",
-      statusColor: "bg-error",
-      statusBg: "bg-error-container",
-      statusText: "text-on-error-container",
-    };
-  }
-
-  return {
-    title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
-    status: "Action Needed",
-    statusColor: "bg-secondary",
-    statusBg: "bg-secondary-container",
-    statusText: "text-on-secondary-container",
-  };
-};
-
 const formatDate = (isoString: string) => {
   try {
     const date = new Date(isoString);
@@ -154,6 +121,39 @@ export default function HistoryCard() {
       </div>
     );
   }
+
+  const getDiagnosisMetadata = (item: HistoryItem) => {
+    const diagnosis = item.diagnosis || "UNKNOWN";
+    const severity = item.severity || 0;
+
+    if (diagnosis === "HEALTHY") {
+      return {
+        title: "Healthy Crop",
+        status: t.history.excellent,
+        statusColor: "bg-primary",
+        statusBg: "bg-primary-fixed",
+        statusText: "text-on-primary-fixed-variant",
+      };
+    }
+
+    if (severity > 0.5) {
+      return {
+        title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
+        status: t.history.critical,
+        statusColor: "bg-error",
+        statusBg: "bg-error-container",
+        statusText: "text-on-error-container",
+      };
+    }
+
+    return {
+      title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
+      status: t.history.actionNeeded,
+      statusColor: "bg-secondary",
+      statusBg: "bg-secondary-container",
+      statusText: "text-on-secondary-container",
+    };
+  };
 
   return (
     <>

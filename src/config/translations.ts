@@ -71,6 +71,9 @@ export const translations = {
       failedToLoad: "Failed to load records from server.",
       loadingHistory: "Loading history data...",
       resync: "Re-sync Sensors",
+      excellent: "Excellent",
+      actionNeeded: "Action Needed",
+      critical: "Critical"
     },
     profile: {
       title: "Farmer Profile",
@@ -156,6 +159,9 @@ export const translations = {
       failedToLoad: "Gagal memuatkan rekod dari pelayan.",
       loadingHistory: "Memuatkan data sejarah...",
       resync: "Segerak Semula Sensor",
+      excellent: "Cemerlang",
+      actionNeeded: "Tindakan Diperlukan",
+      critical: "Kritikal"
     },
     profile: {
       title: "Profil Petani",
