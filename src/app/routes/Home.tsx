@@ -11,7 +11,7 @@ export default function Home() {
   };
 
   return (
-    <Layout activeTab="home">
+    <Layout>
       <div className="px-6 max-w-2xl mx-auto space-y-12">
         {/* Hero Section */}
         <section className="mt-4">

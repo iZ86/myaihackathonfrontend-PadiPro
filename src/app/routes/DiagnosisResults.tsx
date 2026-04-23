@@ -17,7 +17,7 @@ export default function DiagnosisResults() {
   const navigate = useNavigate();
 
   return (
-    <Layout activeTab="history">
+    <Layout>
       {/* Custom Top Bar */}
       <header className="bg-white/80 backdrop-blur-md fixed top-0 w-full z-50 shadow-sm flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">

@@ -15,7 +15,7 @@ export default function Analysis() {
   }, [navigate]);
 
   return (
-    <Layout activeTab="home">
+    <Layout>
       <main className="flex-1 px-6 flex flex-col items-center">
         {/* Thumbnail of Uploaded Crop */}
         <div className="w-full max-w-sm mb-12">

@@ -10,7 +10,7 @@ import Layout from "../../components/Layout";
 
 export default function Products() {
   return (
-    <Layout activeTab="products">
+    <Layout>
       <main className="pt-6 px-6 max-w-7xl mx-auto pb-40">
         {/* Hero / Section Title */}
         <div className="mb-12">
