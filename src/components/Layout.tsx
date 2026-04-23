@@ -10,7 +10,8 @@ import {
   LogOut,
   Cloud,
 } from "lucide-react";
-import { useAuth } from "@context/useAuth";
+import { useAuth } from "@context/auth/useAuth";
+import { useLanguage } from "@context/lang/useLanguage";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ interface LayoutProps {
 
 export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -77,7 +79,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             }
           >
             <Cloud className="w-5 h-5" />
-            <span>Weather</span>
+            <span>{t.nav.weather}</span>
           </NavLink>
 
           <NavLink
@@ -92,7 +94,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             }
           >
             <History className="w-5 h-5" />
-            <span>History</span>
+            <span>{t.nav.history}</span>
           </NavLink>
 
           {/* <NavLink
@@ -122,7 +124,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             }
           >
             <User className="w-5 h-5" />
-            <span>Profile</span>
+            <span>{t.nav.profile}</span>
           </NavLink>
         </div>
 
@@ -141,7 +143,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-error hover:bg-error-container hover:text-on-error-container font-medium transition-colors mt-2"
           >
             <LogOut className="w-5 h-5" />
-            <span>Sign Out</span>
+            <span>{t.auth.logout}</span>
           </NavLink>
         </div>
       </div>
@@ -198,7 +200,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         >
           <Cloud className="w-6 h-6" />
           <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            Weather
+            {t.nav.weather}
           </span>
         </NavLink>
 
@@ -210,7 +212,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         >
           <History className="w-6 h-6" />
           <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            History
+            {t.nav.history}
           </span>
         </NavLink>
 
@@ -234,7 +236,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         >
           <User className="w-6 h-6" />
           <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            Profile
+            {t.nav.profile}
           </span>
         </NavLink>
       </nav>

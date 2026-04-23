@@ -13,8 +13,9 @@ import Login from "@routes/Login";
 import Profile from "@routes/Profile";
 import History from "@routes/History";
 import Weather from "@routes/Weather";
-import AuthProvider from "@context/AuthProvider";
-import { useAuth } from "@context/useAuth";
+import AuthProvider from "@context/auth/AuthProvider";
+import { useAuth } from "@context/auth/useAuth";
+import { LanguageProvider } from "@context/lang/LanguageProvider";
 
 const ProtectedRoute = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -37,10 +38,12 @@ const ProtectedRoute = () => {
 };
 
 const AuthLayout = () => (
-  <AuthProvider>
-    <Toaster position="top-center" richColors />
-    <Outlet />
-  </AuthProvider>
+  <LanguageProvider>
+    <AuthProvider>
+      <Toaster position="top-center" richColors />
+      <Outlet />
+    </AuthProvider>
+  </LanguageProvider>
 );
 
 const routes = [

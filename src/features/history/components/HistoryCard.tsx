@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { getDiagnosisHistoryAPI } from "@features/history/api/history";
 import type { HistoryItem } from "@datatypes/historyType";
-import { useAuth } from "@context/useAuth";
+import { useAuth } from "@context/auth/useAuth";
+import { useLanguage } from "@context/lang/useLanguage";
 
 const getDiagnosisMetadata = (item: HistoryItem) => {
   const diagnosis = item.diagnosis || "UNKNOWN";
@@ -67,6 +68,7 @@ const formatDate = (isoString: string) => {
 
 export default function HistoryCard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [activeFilter, setActiveFilter] = useState<"all" | "high" | "healthy">(
     "all",
@@ -74,38 +76,41 @@ export default function HistoryCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getDatas = useCallback(async (token: string, mobileNo: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const historyResponse = await getDiagnosisHistoryAPI(token, mobileNo);
+  const getDatas = useCallback(
+    async (token: string, mobileNo: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const historyResponse = await getDiagnosisHistoryAPI(token, mobileNo);
 
-      if (!historyResponse?.ok) {
-        throw new Error("Unable to sync history data. Check connection.");
+        if (!historyResponse?.ok) {
+          throw new Error(t.history.syncInterrupted);
+        }
+
+        const historyJson = await historyResponse.json();
+
+        if (historyJson.success) {
+          const augmentedData = historyJson.data.map((item: HistoryItem) => {
+            const metadata = getDiagnosisMetadata(item);
+            return {
+              ...item,
+              ...metadata,
+              title: item.diagnosis || metadata.title,
+            };
+          });
+          setHistoryItems(augmentedData);
+        } else {
+          setError(t.history.failedToLoad);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(t.history.failedToLoad);
+      } finally {
+        setLoading(false);
       }
-
-      const historyJson = await historyResponse.json();
-
-      if (historyJson.success) {
-        const augmentedData = historyJson.data.map((item: HistoryItem) => {
-          const metadata = getDiagnosisMetadata(item);
-          return {
-            ...item,
-            ...metadata,
-            title: item.diagnosis || metadata.title,
-          };
-        });
-        setHistoryItems(augmentedData);
-      } else {
-        setError("Failed to load records from server.");
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Failed to fetch history data.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!user || !user.mobile_no) return;
@@ -124,7 +129,7 @@ export default function HistoryCard() {
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
         <p className="font-headline font-bold text-primary animate-pulse text-sm">
-          Loading history data...
+          {t.history.loadingHistory}
         </p>
       </div>
     );
@@ -135,16 +140,16 @@ export default function HistoryCard() {
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
         <AlertCircle className="w-12 h-12 text-error" />
         <h2 className="font-headline font-bold text-xl text-on-surface">
-          Sync Interrupted
+          {t.history.syncInterrupted}
         </h2>
         <p className="text-on-surface-variant text-sm max-w-60">
-          {error || "History data is currently unavailable for this field."}
+          {error || t.history.noRecords}
         </p>
         <button
           onClick={() => user && getDatas("randomToken", user.mobile_no)}
           className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
-          Re-sync Sensors
+          {t.history.resync}
         </button>
       </div>
     );
@@ -154,11 +159,11 @@ export default function HistoryCard() {
     <>
       <section className="mb-10 mt-4">
         <p className="font-label text-[11px] uppercase tracking-widest text-primary font-bold mb-2">
-          Diagnostic Archive
+          {t.history.archive}
         </p>
         <h2 className="font-headline font-extrabold text-4xl text-on-surface leading-tight">
-          Diagnosis <br />
-          History
+          {t.history.title.split(" ")[0]} <br />
+          {t.history.title.split(" ")[1]}
         </h2>
       </section>
 
@@ -175,7 +180,7 @@ export default function HistoryCard() {
               {historyItems.length}
             </p>
             <p className="font-label text-xs text-on-surface-variant uppercase tracking-wider">
-              Total Scans
+              {t.history.totalScans}
             </p>
           </div>
         </motion.div>
@@ -188,7 +193,7 @@ export default function HistoryCard() {
           </div>
           <div>
             <p className="text-3xl font-headline font-bold">
-              {historyItems.length > 1
+              {historyItems.length > 0
                 ? Math.round(
                     (historyItems.filter((i) => i.diagnosis === "HEALTHY")
                       .length /
@@ -199,7 +204,7 @@ export default function HistoryCard() {
               %
             </p>
             <p className="font-label text-xs uppercase tracking-wider opacity-80">
-              Crop Health
+              {t.history.cropHealth}
             </p>
           </div>
         </motion.div>
@@ -207,9 +212,9 @@ export default function HistoryCard() {
 
       <div className="flex gap-2 overflow-x-auto pb-6 no-scrollbar">
         {[
-          { id: "all", label: "All Records" },
-          { id: "high", label: "High Risk" },
-          { id: "healthy", label: "Healthy" },
+          { id: "all", label: t.history.all },
+          { id: "high", label: t.history.highRisk },
+          { id: "healthy", label: t.history.healthy },
         ].map((filter) => (
           <button
             key={filter.id}
@@ -269,7 +274,7 @@ export default function HistoryCard() {
         {filteredItems.length === 0 && (
           <div className="py-10 text-center">
             <p className="text-on-surface-variant text-sm font-medium">
-              No records matching this filter.
+              {t.history.noRecords}
             </p>
           </div>
         )}

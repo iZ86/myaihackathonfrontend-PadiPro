@@ -12,9 +12,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@context/useAuth";
+import { useAuth } from "@context/auth/useAuth";
+import { useLanguage } from "@context/lang/useLanguage";
 
-export default function Profile() {
+export default function ProfileCard() {
+  const { language, setLanguage, t } = useLanguage();
   const { loading, user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -63,13 +65,13 @@ export default function Profile() {
       {/* Hero Profile Section */}
       <section className="mb-12 text-left mt-4">
         <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary font-bold mb-2 block">
-          Agricultural Lead
+          {t.profile.lead}
         </span>
         <h1 className="text-4xl font-extrabold text-on-surface mb-2 font-headline">
           {user?.name || "PadiPro User"}
         </h1>
         <p className="text-on-surface-variant font-body">
-          Managing PadiPro Estates • Premium Member
+          {t.profile.managing} • {t.profile.member}
         </p>
       </section>
 
@@ -90,22 +92,51 @@ export default function Profile() {
           </div>
           <div className="space-y-4">
             {[
-              { label: "Phone", value: user?.mobile_no || "" },
-              { label: "Farm Location", value: user?.location || "Unknown" },
+              { label: t.auth.phone, value: user?.mobile_no || "" },
+              {
+                label: t.profile.farmLocation,
+                value: user?.location || "Unknown",
+              },
             ].map((item, i) => (
               <div
                 key={i}
                 className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container cursor-pointer hover:bg-surface-container-low transition-colors group"
               >
-                <div>
+                <div className="grow mr-2">
                   <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
                     {item.label}
                   </p>
-                  <p className="font-medium font-body">{item.value}</p>
+                  <p className="font-medium font-body truncate">{item.value}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-outline group-hover:text-primary transition-transform group-hover:translate-x-1" />
               </div>
             ))}
+
+            {/* Language Switcher in Bento List */}
+            <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container">
+              <div className="grow">
+                <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
+                  {t.profile.language}
+                </p>
+                <p className="font-medium font-body">
+                  {language === "en" ? "English" : "Bahasa Melayu"}
+                </p>
+              </div>
+              <div className="flex bg-surface-container rounded-lg p-1">
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${language === "en" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLanguage("ms")}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${language === "ms" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
+                >
+                  MS
+                </button>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -171,7 +202,7 @@ export default function Profile() {
         className="w-full mt-8 flex items-center justify-center gap-3 py-4 bg-surface-container-high text-error font-bold rounded-xl active:scale-[0.98] transition-all hover:bg-error-container cursor-pointer"
       >
         <LogOut className="w-5 h-5" />
-        Log Out
+        {t.auth.logout}
       </button>
 
       {/* Aesthetic Grounding Element */}

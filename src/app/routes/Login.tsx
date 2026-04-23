@@ -10,11 +10,14 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { generateOTPAPI, verifyOTPAPI } from "@features/auth/api/auth";
-import { useAuth } from "@context/useAuth";
+import { useAuth } from "@context/auth/useAuth";
+import { toast } from "sonner";
+import { useLanguage } from "@context/lang/useLanguage";
 
 export default function Login() {
-  const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [mobileNo, setMobileNo] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"mobile" | "otp">("mobile");
@@ -32,6 +35,9 @@ export default function Login() {
       const response = await generateOTPAPI(mobileNo);
       if (response && response.ok) {
         setStep("otp");
+        toast.success(t.auth.generateOtp, {
+          description: "A 6-digit code is waiting for you in WhatsApp.",
+        });
       } else {
         setError("Failed to send OTP. Please check your mobile number.");
       }
@@ -113,17 +119,17 @@ export default function Login() {
               >
                 <header>
                   <h2 className="font-headline font-bold text-2xl text-on-surface">
-                    Get Started
+                    {t.auth.login}
                   </h2>
                   <p className="font-body text-on-surface-variant text-sm mt-1">
-                    Enter your mobile number to receive a WhatsApp OTP.
+                    {t.auth.enterMobileNo}
                   </p>
                 </header>
 
                 <form onSubmit={handleGenerateOTP} className="space-y-6">
                   <div className="space-y-2">
                     <label className="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1">
-                      Mobile Number
+                      {t.auth.phone}
                     </label>
                     <div className="relative group">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 w-5 h-5 group-focus-within:text-primary transition-colors" />
@@ -157,7 +163,7 @@ export default function Login() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        Send code via WhatsApp{" "}
+                        {t.auth.generateOtp}
                         <ArrowRight className="w-5 h-5" />
                       </>
                     )}
@@ -191,7 +197,7 @@ export default function Login() {
                 <form onSubmit={handleVerifyOTP} className="space-y-6">
                   <div className="space-y-2">
                     <label className="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant ml-1">
-                      OTP Code
+                      {t.auth.otp}
                     </label>
                     <div className="relative group">
                       <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60 w-5 h-5 group-focus-within:text-primary transition-colors" />
@@ -226,7 +232,8 @@ export default function Login() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        Verify & Continue <CheckCircle className="w-5 h-5" />
+                        {t.auth.verify}
+                        <CheckCircle className="w-5 h-5" />
                       </>
                     )}
                   </button>

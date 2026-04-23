@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import type { ForecastDay } from "@datatypes/weatherType";
 import { getWeatherDailyByMobileNoAPI } from "@features/weather/api/weathers";
-import { useAuth } from "@context/useAuth";
+import { useAuth } from "@context/auth/useAuth";
+import { useLanguage } from "@context/lang/useLanguage";
 
 const getWeatherIcon = (type: string) => {
   switch (type) {
@@ -60,46 +61,64 @@ const formatTime = (isoString?: string) => {
 
 export default function WeatherForecast() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [weatherData, setWeatherData] = useState<ForecastDay[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
-  const getDatas = useCallback(async (token: string, mobileNo: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const weatherResponse = await getWeatherDailyByMobileNoAPI(
-        token,
-        mobileNo,
-      );
+  const getDatas = useCallback(
+    async (token: string, mobileNo: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const weatherResponse = await getWeatherDailyByMobileNoAPI(
+          token,
+          mobileNo,
+        );
 
-      if (!weatherResponse?.ok) {
-        throw new Error("Unable to sync field data. Check connection.");
+        if (!weatherResponse?.ok) {
+          throw new Error(t.history.syncInterrupted);
+        }
+
+        const weatherJson = await weatherResponse.json();
+
+        setWeatherData(weatherJson.data.forecastDays);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(t.common.error);
+      } finally {
+        setLoading(false);
       }
-
-      const weatherJson = await weatherResponse.json();
-
-      setWeatherData(weatherJson.data.forecastDays);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Failed to fetch weather data.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!user) return;
     if (user) getDatas("randomToken", user.mobile_no);
   }, [getDatas, user]);
 
+  const getDayNameLocalized = (
+    date: { year: number; month: number; day: number },
+    index: number,
+  ) => {
+    if (language === "ms") {
+      if (index === 0) return "Hari Ini";
+      if (index === 1) return "Esok";
+      const days = ["Ahad", "Isn", "Sel", "Rab", "Kha", "Jum", "Sab"];
+      const d = new Date(date.year, date.month - 1, date.day);
+      return days[d.getDay()];
+    }
+    return getDayName(date, index);
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
         <p className="font-headline font-bold text-primary animate-pulse text-sm">
-          Loading weather data...
+          {t.weather.syncing}
         </p>
       </div>
     );
@@ -110,16 +129,16 @@ export default function WeatherForecast() {
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
         <AlertCircle className="w-12 h-12 text-error" />
         <h2 className="font-headline font-bold text-xl text-on-surface">
-          Sync Interrupted
+          {t.history.syncInterrupted}
         </h2>
         <p className="text-on-surface-variant text-sm max-w-60">
-          {error || "Weather data is currently unavailable for this field."}
+          {error || t.history.noRecords}
         </p>
         <button
           onClick={() => getDatas("randomToken", "60125821900")}
           className="mt-2 px-6 py-2.5 hero-gradient text-white rounded-full font-bold shadow-lg text-sm transition-transform active:scale-95"
         >
-          Re-sync Sensors
+          {t.history.resync}
         </button>
       </div>
     );
@@ -141,13 +160,14 @@ export default function WeatherForecast() {
         <div className="flex justify-between items-start relative z-10">
           <div className="max-w-[70%]">
             <p className="font-label text-xs uppercase tracking-widest opacity-80 mb-2">
-              Field Monitor
+              {t.weather.fieldMonitor}
             </p>
             <h2 className="text-2xl font-bold font-headline mb-0.5 leading-tight">
-              {user?.name ? `${user.name}'s Estate` : "Local Field"}
+              {user?.name ? `${user.name}'s Estate` : t.weather.localField}
             </h2>
             <p className="text-[10px] font-medium opacity-70 mb-5 tracking-wider uppercase bg-white/10 w-fit px-2 py-0.5 rounded-full">
-              {user?.location} • {user?.coords._latitude.toFixed(3)}°,{" "}
+              {user?.location || t.weather.unmapped} •{" "}
+              {user?.coords._latitude.toFixed(3) || "0.00"}°,{" "}
               {user?.coords._longitude.toFixed(3)}°
             </p>
             <div className="flex items-end gap-3 text-white">
@@ -160,7 +180,8 @@ export default function WeatherForecast() {
                 </span>
                 {currentDay.maxHeatIndex && (
                   <span className="text-[10px] font-medium opacity-60">
-                    Feels like {Math.round(currentDay.maxHeatIndex.degrees)}°
+                    {t.weather.feelsLike}{" "}
+                    {Math.round(currentDay.maxHeatIndex.degrees)}°
                   </span>
                 )}
               </div>
@@ -181,17 +202,17 @@ export default function WeatherForecast() {
         <div className="mt-10 grid grid-cols-3 gap-6 relative z-10 border-t border-white/10 pt-6">
           {[
             {
-              label: "Humidity",
+              label: t.weather.humidity,
               value: `${currentDay.daytimeForecast.relativeHumidity}%`,
               icon: Droplets,
             },
             {
-              label: "Wind",
+              label: t.weather.wind,
               value: `${currentDay.daytimeForecast.wind.speed.value} km/h`,
               icon: Wind,
             },
             {
-              label: "Rainfall",
+              label: t.weather.rainfall,
               value: `${currentDay.daytimeForecast.precipitation.qpf.quantity} mm`,
               icon: CloudRain,
             },
@@ -229,25 +250,33 @@ export default function WeatherForecast() {
           </div>
           <div>
             <h3 className="text-lg font-headline font-bold text-primary leading-tight">
-              Agronomic Advice
+              {t.weather.advice}
             </h3>
             <p className="text-[10px] uppercase font-bold text-primary/60 tracking-wider">
-              Smart Sensor Insights
+              {t.weather.sensorInsights}
             </p>
           </div>
         </div>
         <div className="bg-white/50 p-4 rounded-2xl space-y-3">
           <p className="text-on-surface-variant text-xs leading-relaxed font-medium">
             {currentDay.daytimeForecast.relativeHumidity > 75
-              ? `Extreme humidity detected (${currentDay.daytimeForecast.relativeHumidity}%). High risk of sheath blight. Recommend urgent fungicidal surveillance.`
-              : "Ideal humidity levels for physiological crop growth. Nutrient uptake is currently optimal."}
+              ? language === "ms"
+                ? `Kelembapan melampau dikesan (${currentDay.daytimeForecast.relativeHumidity}%). Risiko tinggi penyakit hawar selaput. Disyorkan pengawasan racun kulat segera.`
+                : `Extreme humidity detected (${currentDay.daytimeForecast.relativeHumidity}%). High risk of sheath blight. Recommend urgent fungicidal surveillance.`
+              : language === "ms"
+                ? "Tahap kelembapan ideal untuk pertumbuhan tanaman fisiologi. Pengambilan nutrien pada masa ini adalah optimum."
+                : "Ideal humidity levels for physiological crop growth. Nutrient uptake is currently optimal."}
           </p>
           <div className="flex items-center gap-2.5 text-primary font-bold text-[11px] bg-primary/10 w-fit px-3 py-1.5 rounded-full border border-primary/10">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>
               {currentDay.daytimeForecast.precipitation.probability.percent > 50
-                ? "Weather Warning: Postpone immediate spraying"
-                : "Weather Stable: Perfect nitrogen window"}
+                ? language === "ms"
+                  ? "Amaran Cuaca: Tangguhkan penyemburan segera"
+                  : "Weather Warning: Postpone immediate spraying"
+                : language === "ms"
+                  ? "Cuaca Stabil: Tempoh pembajaan nitrogen yang sesuai"
+                  : "Weather Stable: Perfect nitrogen window"}
             </span>
           </div>
         </div>
@@ -262,10 +291,10 @@ export default function WeatherForecast() {
       >
         <div className="flex justify-between items-center px-2">
           <h3 className="font-headline font-bold text-xl text-primary">
-            Weekly Outlook
+            {t.weather.title}
           </h3>
           <span className="text-[10px] uppercase font-bold text-outline-variant bg-surface-container-low px-2 py-1 rounded-md">
-            {weatherData?.length} Day Tracker
+            {weatherData?.length} {t.weather.tracker}
           </span>
         </div>
 
@@ -290,11 +319,11 @@ export default function WeatherForecast() {
                       className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isExpanded ? "bg-primary text-white" : "bg-surface-container text-primary"}`}
                     >
                       <span className="font-bold text-[11px] uppercase">
-                        {getDayName(item.displayDate, i).slice(0, 3)}
+                        {getDayNameLocalized(item.displayDate, i).slice(0, 3)}
                       </span>
                     </div>
                     <span className="font-bold text-on-surface text-sm hidden sm:inline">
-                      {getDayName(item.displayDate, i)}
+                      {getDayNameLocalized(item.displayDate, i)}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 w-1/3 justify-center">
@@ -338,13 +367,13 @@ export default function WeatherForecast() {
                           <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Day Cycles
+                                {t.weather.dayCycles}
                               </span>
                               <Sun className="w-4 h-4 text-amber-500" />
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-on-surface-variant">
-                                Sunrise
+                                {t.weather.sunrise}
                               </span>
                               <span className="text-xs font-bold text-primary">
                                 {formatTime(item.sunEvents?.sunriseTime)}
@@ -352,7 +381,7 @@ export default function WeatherForecast() {
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-on-surface-variant">
-                                Sunset
+                                {t.weather.sunset}
                               </span>
                               <span className="text-xs font-bold text-primary">
                                 {formatTime(item.sunEvents?.sunsetTime)}
@@ -363,13 +392,13 @@ export default function WeatherForecast() {
                           <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Risk Factors
+                                {t.weather.riskFactors}
                               </span>
                               <AlertCircle className="w-4 h-4 text-error/60" />
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-on-surface-variant">
-                                UV Index
+                                {t.weather.uvIndex}
                               </span>
                               <span className="text-xs font-bold text-primary">
                                 {item.daytimeForecast.uvIndex ?? 0}
@@ -377,7 +406,7 @@ export default function WeatherForecast() {
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-on-surface-variant">
-                                Storm %
+                                {t.weather.stormChance}
                               </span>
                               <span className="text-xs font-bold text-primary">
                                 {item.daytimeForecast.thunderstormProbability ??
@@ -390,7 +419,7 @@ export default function WeatherForecast() {
                           <div className="col-span-2 grid grid-cols-2 gap-4">
                             <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3 group">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Day Dynamics
+                                {t.weather.dayDynamics}
                               </span>
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
@@ -411,13 +440,13 @@ export default function WeatherForecast() {
                                   item.daytimeForecast.precipitation.probability
                                     .percent
                                 }
-                                % Precip Probability
+                                % {t.weather.precip}
                               </p>
                             </div>
 
                             <div className="bg-white p-5 rounded-3xl shadow-sm border border-surface-container/50 flex flex-col gap-3 group">
                               <span className="text-[10px] uppercase font-bold text-outline tracking-wider">
-                                Night Shift
+                                {t.weather.nightShift}
                               </span>
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
@@ -438,7 +467,7 @@ export default function WeatherForecast() {
                                   item.nighttimeForecast.precipitation
                                     .probability.percent
                                 }
-                                % Precip Probability
+                                % {t.weather.precip}
                               </p>
                             </div>
                           </div>
@@ -449,17 +478,17 @@ export default function WeatherForecast() {
                           {[
                             {
                               icon: Wind,
-                              label: "Wind",
+                              label: t.weather.wind,
                               value: `${item.daytimeForecast.wind.speed.value} km/h`,
                             },
                             {
                               icon: Cloudy,
-                              label: "Clouds",
+                              label: t.weather.clouds,
                               value: `${item.daytimeForecast.cloudCover ?? 0}%`,
                             },
                             {
                               icon: Droplets,
-                              label: "Prec.",
+                              label: t.weather.rainfall,
                               value: `${item.daytimeForecast.precipitation.qpf.quantity}mm`,
                             },
                           ].map((stat, idx) => (
