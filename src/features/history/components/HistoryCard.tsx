@@ -11,38 +11,37 @@ import { getDiagnosisHistoryAPI } from "@features/history/api/history";
 import type { HistoryItem } from "@datatypes/historyType";
 import { useAuth } from "@context/useAuth";
 
-const getDummyMetadata = (index: number) => {
-  const statuses = [
-    {
-      title: "Blast Disease",
-      status: "Critical",
-      statusColor: "bg-error",
-      statusBg: "bg-error-container",
-      statusText: "text-on-error-container",
-    },
-    {
+const getDiagnosisMetadata = (item: HistoryItem) => {
+  const diagnosis = item.diagnosis || "UNKNOWN";
+  const severity = item.severity || 0;
+
+  if (diagnosis === "HEALTHY") {
+    return {
       title: "Healthy Crop",
       status: "Excellent",
       statusColor: "bg-primary",
       statusBg: "bg-primary-fixed",
       statusText: "text-on-primary-fixed-variant",
-    },
-    {
-      title: "Bacterial Blight",
+    };
+  }
+
+  if (severity > 0.5) {
+    return {
+      title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
       status: "Critical",
       statusColor: "bg-error",
       statusBg: "bg-error-container",
       statusText: "text-on-error-container",
-    },
-    {
-      title: "Nutrient Deficiency",
-      status: "Action Needed",
-      statusColor: "bg-secondary",
-      statusBg: "bg-secondary-container",
-      statusText: "text-on-secondary-container",
-    },
-  ];
-  return statuses[index % statuses.length];
+    };
+  }
+
+  return {
+    title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
+    status: "Action Needed",
+    statusColor: "bg-secondary",
+    statusBg: "bg-secondary-container",
+    statusText: "text-on-secondary-container",
+  };
 };
 
 const formatDate = (isoString: string) => {
@@ -66,9 +65,12 @@ const formatDate = (isoString: string) => {
   }
 };
 
-export default function History() {
+export default function HistoryCard() {
   const { user } = useAuth();
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [activeFilter, setActiveFilter] = useState<"all" | "high" | "healthy">(
+    "all",
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,12 +87,14 @@ export default function History() {
       const historyJson = await historyResponse.json();
 
       if (historyJson.success) {
-        const augmentedData = historyJson.data.map(
-          (item: HistoryItem, index: number) => {
-            const metadata = getDummyMetadata(index);
-            return { ...item, ...metadata };
-          },
-        );
+        const augmentedData = historyJson.data.map((item: HistoryItem) => {
+          const metadata = getDiagnosisMetadata(item);
+          return {
+            ...item,
+            ...metadata,
+            title: item.diagnosis || metadata.title,
+          };
+        });
         setHistoryItems(augmentedData);
       } else {
         setError("Failed to load records from server.");
@@ -104,11 +108,16 @@ export default function History() {
   }, []);
 
   useEffect(() => {
-    // TODO: Replace with authenticated context values
     if (!user || !user.mobile_no) return;
-
     getDatas("randomToken", user.mobile_no);
   }, [getDatas, user]);
+
+  const filteredItems = historyItems.filter((item) => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "healthy") return item.diagnosis === "HEALTHY";
+    if (activeFilter === "high") return item.severity > 0.5;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -121,7 +130,7 @@ export default function History() {
     );
   }
 
-  if (error || !historyItems || historyItems.length === 0) {
+  if (error || !historyItems) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-6 text-center bg-error-container/10 py-10 rounded-3xl border-2 border-dashed border-error/20">
         <AlertCircle className="w-12 h-12 text-error" />
@@ -143,7 +152,6 @@ export default function History() {
 
   return (
     <>
-      {/* Editorial Header Section */}
       <section className="mb-10 mt-4">
         <p className="font-label text-[11px] uppercase tracking-widest text-primary font-bold mb-2">
           Diagnostic Archive
@@ -154,7 +162,6 @@ export default function History() {
         </h2>
       </section>
 
-      {/* Stats Overview Bento */}
       <section className="grid grid-cols-2 gap-4 mb-12">
         <motion.div
           whileHover={{ scale: 1.02 }}
@@ -180,7 +187,17 @@ export default function History() {
             <Verified className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-3xl font-headline font-bold">82%</p>
+            <p className="text-3xl font-headline font-bold">
+              {historyItems.length > 1
+                ? Math.round(
+                    (historyItems.filter((i) => i.diagnosis === "HEALTHY")
+                      .length /
+                      historyItems.length) *
+                      100,
+                  )
+                : 0}
+              %
+            </p>
             <p className="font-label text-xs uppercase tracking-wider opacity-80">
               Crop Health
             </p>
@@ -188,25 +205,30 @@ export default function History() {
         </motion.div>
       </section>
 
-      {/* Filter Chips */}
       <div className="flex gap-2 overflow-x-auto pb-6 no-scrollbar">
-        <button className="bg-primary text-on-primary px-5 py-2 rounded-full font-label text-xs font-semibold whitespace-nowrap">
-          All Records
-        </button>
-        <button className="bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-full font-label text-xs font-semibold whitespace-nowrap hover:bg-surface-container-highest transition-colors">
-          High Risk
-        </button>
-        <button className="bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-full font-label text-xs font-semibold whitespace-nowrap hover:bg-surface-container-highest transition-colors">
-          Healthy
-        </button>
-        <button className="bg-surface-container-high text-on-surface-variant px-5 py-2 rounded-full font-label text-xs font-semibold whitespace-nowrap hover:bg-surface-container-highest transition-colors">
-          Recent
-        </button>
+        {[
+          { id: "all", label: "All Records" },
+          { id: "high", label: "High Risk" },
+          { id: "healthy", label: "Healthy" },
+        ].map((filter) => (
+          <button
+            key={filter.id}
+            onClick={() =>
+              setActiveFilter(filter.id as "all" | "high" | "healthy")
+            }
+            className={`px-5 py-2 rounded-full font-label text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              activeFilter === filter.id
+                ? "bg-primary text-on-primary"
+                : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest"
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
       </div>
 
-      {/* History List */}
       <div className="space-y-6">
-        {historyItems.map((item, index) => (
+        {filteredItems.map((item, index) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 10 }}
@@ -227,8 +249,8 @@ export default function History() {
               <p className="font-label text-[10px] text-outline uppercase tracking-tighter mb-0.5">
                 {formatDate(item.created_at)}
               </p>
-              <h3 className="font-headline font-bold text-on-surface text-base">
-                {item.title}
+              <h3 className="font-headline font-bold text-on-surface text-base uppercase tracking-tight">
+                {item.diagnosis}
               </h3>
               <div
                 className={`mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${item.statusBg} ${item.statusText}`}
@@ -237,20 +259,20 @@ export default function History() {
                   className={`w-1.5 h-1.5 rounded-full ${item.statusColor}`}
                 ></span>
                 <span className="text-[10px] font-bold uppercase tracking-wide">
-                  {item.status}
+                  {item.status} ({Math.round(item.severity * 100)}%)
                 </span>
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-outline group-hover:text-primary transition-colors" />
           </motion.div>
         ))}
-      </div>
-
-      {/* Pagination / Load More */}
-      <div className="mt-10 flex justify-center pb-12">
-        <button className="bg-surface-container-high text-on-surface px-8 py-3 rounded-full font-label text-sm font-semibold hover:bg-surface-container-highest transition-colors active:scale-95 duration-200">
-          View Older Records
-        </button>
+        {filteredItems.length === 0 && (
+          <div className="py-10 text-center">
+            <p className="text-on-surface-variant text-sm font-medium">
+              No records matching this filter.
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

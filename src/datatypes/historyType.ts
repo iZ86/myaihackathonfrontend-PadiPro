@@ -7,7 +7,8 @@ export type HistoryItem = {
   download_url: string;
   created_at: string;
   sha256: string;
-  // Dummy fields
+  severity: number;
+  diagnosis: string;
   title?: string;
   status?: string;
   statusColor?: string;
