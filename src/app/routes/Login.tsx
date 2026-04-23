@@ -29,13 +29,13 @@ export default function Login() {
     setError(null);
     try {
       // TODO: Uncomment when backend is hosted
-      // const response = await generateOTPAPI(mobileNo);
-      // if (response && response.ok) {
-      //   setStep("otp");
-      // } else {
-      //   setError("Failed to send OTP. Please check your mobile number.");
-      // }
-      setStep("otp");
+      const response = await generateOTPAPI(mobileNo);
+      if (response && response.ok) {
+        setStep("otp");
+      } else {
+        setError("Failed to send OTP. Please check your mobile number.");
+      }
+      // setStep("otp");
     } catch (err) {
       setError("An error occurred. Please try again later.");
       console.error("Error occurred while generating OTP:", err);
@@ -52,15 +52,15 @@ export default function Login() {
     setError(null);
     try {
       // TODO: Uncomment when backend is hosted
-      // const response = await verifyOTPAPI(mobileNo, otp);
-      // if (response && response.ok) {
-      //   await login(mobileNo);
-      //   navigate("/weather");
-      // } else {
-      //   setError("Invalid OTP. Please try again.");
-      // }
-      await login(mobileNo);
-      navigate("/weather");
+      const response = await verifyOTPAPI(mobileNo, otp);
+      if (response && response.ok) {
+        await login(mobileNo);
+        navigate("/weather");
+      } else {
+        setError("Invalid OTP. Please try again.");
+      }
+      // await login(mobileNo);
+      // navigate("/weather");
     } catch (err) {
       setError("An error occurred during verification.");
       console.error("Error occurred during OTP verification:", err);

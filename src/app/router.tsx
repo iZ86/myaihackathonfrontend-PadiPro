@@ -1,9 +1,11 @@
+import React, { useEffect } from "react";
 import {
   createBrowserRouter,
   Navigate,
   Outlet,
   RouterProvider,
-} from "react-router";
+} from "react-router-dom";
+import { Toaster, toast } from "sonner";
 import User from "@routes/User";
 import Analysis from "@routes/Analysis";
 import DiagnosisResults from "@routes/DiagnosisResults";
@@ -12,12 +14,31 @@ import Profile from "@routes/Profile";
 import History from "@routes/History";
 import Weather from "@routes/Weather";
 import AuthProvider from "@context/AuthProvider";
-// import Home from "@routes/Home";
-// import SignUp from "@routes/SignUp";
-// import Products from "@routes/Products";
+import { useAuth } from "@context/useAuth";
+
+const ProtectedRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+  const wasLoading = React.useRef(loading);
+
+  useEffect(() => {
+    // Only show the toast if we just finished the INITIAL loader
+    // and found no session. This prevents it from firing on Logout.
+    if (wasLoading.current === true && !loading && !isAuthenticated) {
+      toast.error("Session Required", {
+        description: "Please log in to access your field intelligence.",
+      });
+    }
+    wasLoading.current = loading;
+  }, [isAuthenticated, loading]);
+
+  if (loading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Outlet />;
+};
 
 const AuthLayout = () => (
   <AuthProvider>
+    <Toaster position="top-center" richColors />
     <Outlet />
   </AuthProvider>
 );
@@ -32,45 +53,42 @@ const routes = [
         element: <Login />,
       },
       {
-        path: "/users",
-        element: <User />,
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: "/users",
+            element: <User />,
+          },
+          {
+            path: "/analysis",
+            element: <Analysis />,
+          },
+          {
+            path: "/diagnosis-results",
+            element: <DiagnosisResults />,
+          },
+          {
+            path: "/profile",
+            element: <Profile />,
+          },
+          {
+            path: "/history",
+            element: <History />,
+          },
+          {
+            path: "/weather",
+            element: <Weather />,
+          },
+        ],
       },
       {
         path: "/*",
         element: <Navigate to="/weather" replace />,
       },
       {
-        path: "/analysis",
-        element: <Analysis />,
+        path: "/",
+        element: <Navigate to="/weather" replace />,
       },
-      {
-        path: "/diagnosis-results",
-        element: <DiagnosisResults />,
-      },
-      {
-        path: "/profile",
-        element: <Profile />,
-      },
-      {
-        path: "/history",
-        element: <History />,
-      },
-      {
-        path: "/weather",
-        element: <Weather />,
-      },
-      // {
-      //   path: "/products",
-      //   element: <Products />,
-      // },
-      // {
-      //   path: "/signup",
-      //   element: <SignUp />,
-      // },
-      // {
-      //   path: "/home",
-      //   element: <Home />,
-      // },
     ],
   },
 ];
@@ -80,3 +98,5 @@ export const Router = () => {
 
   return <RouterProvider router={router} />;
 };
+
+export default Router;
