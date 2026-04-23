@@ -6,7 +6,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { Toaster, toast } from "sonner";
-import User from "@routes/User";
 import Analysis from "@routes/Analysis";
 import DiagnosisResults from "@routes/DiagnosisResults";
 import Login from "@routes/Login";
@@ -58,10 +57,6 @@ const routes = [
       {
         element: <ProtectedRoute />,
         children: [
-          {
-            path: "/users",
-            element: <User />,
-          },
           {
             path: "/analysis",
             element: <Analysis />,
