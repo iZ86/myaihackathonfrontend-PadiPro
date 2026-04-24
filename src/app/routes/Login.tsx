@@ -89,7 +89,7 @@ export default function Login() {
             </div>
             <div>
               <h1 className="font-headline font-extrabold text-white text-4xl tracking-tight mb-1">
-                PaddyAI
+                PadiPro
               </h1>
               <p className="font-label text-primary-fixed text-xs font-medium tracking-widest uppercase">
                 Smart Field Intelligence
@@ -246,7 +246,7 @@ export default function Login() {
 
           <footer className="mt-auto pt-8 text-center border-t border-surface-container/50 mb-2">
             <p className="font-label text-xs text-on-surface-variant">
-              By continuing, you agree to PaddyAI's
+              By continuing, you agree to PadiPro's
               <br />
               <span className="text-primary font-bold">
                 Terms of Service
