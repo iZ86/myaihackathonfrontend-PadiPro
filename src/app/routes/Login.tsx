@@ -30,6 +30,13 @@ export default function Login() {
 
     setLoading(true);
     setError(null);
+
+    // Mock login for demo without backend
+    if (mobileNo == "60172681225") {
+      await login(mobileNo);
+      navigate("/weather");
+      return;
+    }
     try {
       // TODO: Uncomment when backend is hosted
       const response = await generateOTPAPI(mobileNo);
