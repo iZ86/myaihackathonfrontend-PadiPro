@@ -33,6 +33,29 @@ const formatDate = (isoString: string) => {
   }
 };
 
+const normalizeDetections = (item: HistoryItem) => {
+  if (item.detections && item.detections.length > 0) {
+    return item.detections;
+  }
+
+  if (item.diagnosis) {
+    return [
+      {
+        disease: item.diagnosis,
+        severity: item.severity || 0,
+      },
+    ];
+  }
+
+  // No data
+  return [
+    {
+      disease: "Unknown",
+      severity: 0,
+    },
+  ];
+};
+
 export default function HistoryCard() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -44,11 +67,18 @@ export default function HistoryCard() {
   const [error, setError] = useState<string | null>(null);
 
   const getDiagnosisMetadata = useCallback(
-    (item: HistoryItem) => {
-      const diagnosis = item.diagnosis || "UNKNOWN";
-      const severity = item.severity || 0;
+    (detection: { disease: string; severity: number }) => {
+      if (detection.disease === "Unknown") {
+        return {
+          title: "Unknown",
+          status: t.history.unknown || "Unknown",
+          statusColor: "bg-outline",
+          statusBg: "bg-surface-container-high",
+          statusText: "text-on-surface-variant",
+        };
+      }
 
-      if (diagnosis === "HEALTHY") {
+      if (detection.disease === "HEALTHY") {
         return {
           title: "Healthy Crop",
           status: t.history.excellent,
@@ -58,9 +88,11 @@ export default function HistoryCard() {
         };
       }
 
-      if (severity > 0.5) {
+      if (detection.severity > 0.5) {
         return {
-          title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
+          title:
+            detection.disease.charAt(0) +
+            detection.disease.slice(1).toLowerCase(),
           status: t.history.critical,
           statusColor: "bg-error",
           statusBg: "bg-error-container",
@@ -69,7 +101,9 @@ export default function HistoryCard() {
       }
 
       return {
-        title: diagnosis.charAt(0) + diagnosis.slice(1).toLowerCase(),
+        title:
+          detection.disease.charAt(0) +
+          detection.disease.slice(1).toLowerCase(),
         status: t.history.actionNeeded,
         statusColor: "bg-secondary",
         statusBg: "bg-secondary-container",
@@ -94,11 +128,11 @@ export default function HistoryCard() {
 
         if (historyJson.success) {
           const augmentedData = historyJson.data.map((item: HistoryItem) => {
-            const metadata = getDiagnosisMetadata(item);
+            const detections = normalizeDetections(item);
+
             return {
               ...item,
-              ...metadata,
-              title: item.diagnosis || metadata.title,
+              detections,
             };
           });
           setHistoryItems(augmentedData);
@@ -112,7 +146,7 @@ export default function HistoryCard() {
         setLoading(false);
       }
     },
-    [t, getDiagnosisMetadata],
+    [t],
   );
 
   useEffect(() => {
@@ -121,9 +155,18 @@ export default function HistoryCard() {
   }, [getDatas, user]);
 
   const filteredItems = historyItems.filter((item) => {
+    const detections = item.detections || [];
+
     if (activeFilter === "all") return true;
-    if (activeFilter === "healthy") return item.diagnosis === "HEALTHY";
-    if (activeFilter === "high") return item.severity > 0.5;
+
+    if (activeFilter === "healthy") {
+      return detections.some((d) => d.disease === "HEALTHY");
+    }
+
+    if (activeFilter === "high") {
+      return detections.some((d) => d.severity > 0.5);
+    }
+
     return true;
   });
 
@@ -198,8 +241,9 @@ export default function HistoryCard() {
             <p className="text-3xl font-headline font-bold">
               {historyItems.length > 0
                 ? Math.round(
-                    (historyItems.filter((i) => i.diagnosis === "HEALTHY")
-                      .length /
+                    (historyItems.filter((i) =>
+                      i.detections.some((d) => d.disease === "HEALTHY"),
+                    ).length /
                       historyItems.length) *
                       100,
                   )
@@ -257,18 +301,24 @@ export default function HistoryCard() {
               <p className="font-label text-[10px] text-outline uppercase tracking-tighter mb-0.5">
                 {formatDate(item.created_at)}
               </p>
-              <h3 className="font-headline font-bold text-on-surface text-base uppercase tracking-tight">
-                {item.diagnosis}
-              </h3>
-              <div
-                className={`mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${item.statusBg} ${item.statusText}`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${item.statusColor}`}
-                ></span>
-                <span className="text-[10px] font-bold uppercase tracking-wide">
-                  {item.status} ({Math.round(item.severity * 100)}%)
-                </span>
+              <div className="flex flex-wrap gap-1">
+                {item.detections.map((d, i) => {
+                  const meta = getDiagnosisMetadata(d);
+
+                  return (
+                    <div
+                      key={i}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${meta.statusBg} ${meta.statusText}`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${meta.statusColor}`}
+                      />
+                      <span className="text-[10px] font-bold uppercase">
+                        {meta.title} ({Math.round(d.severity * 100)}%)
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-outline group-hover:text-primary transition-colors" />

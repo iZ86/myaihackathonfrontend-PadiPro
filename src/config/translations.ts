@@ -73,7 +73,8 @@ export const translations = {
       resync: "Re-sync Sensors",
       excellent: "Excellent",
       actionNeeded: "Action Needed",
-      critical: "Critical"
+      critical: "Critical",
+      unknown: "Unknown"
     },
     profile: {
       title: "Farmer Profile",
@@ -161,7 +162,8 @@ export const translations = {
       resync: "Segerak Semula Sensor",
       excellent: "Cemerlang",
       actionNeeded: "Tindakan Diperlukan",
-      critical: "Kritikal"
+      critical: "Kritikal",
+      unknown: "Tidak diketahui"
     },
     profile: {
       title: "Profil Petani",

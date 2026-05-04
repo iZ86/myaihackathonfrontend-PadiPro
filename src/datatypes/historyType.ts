@@ -7,8 +7,15 @@ export type HistoryItem = {
   download_url: string;
   created_at: string;
   sha256: string;
-  severity: number;
-  diagnosis: string;
+  detections: [
+    {
+      disease: string;
+      severity: number;
+      score: number;
+    }
+  ];
+  diagnosis?: string;
+  severity?: string;
   title?: string;
   status?: string;
   statusColor?: string;

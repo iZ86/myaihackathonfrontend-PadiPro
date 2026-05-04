@@ -100,7 +100,7 @@ export default function ProfileCard() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container cursor-pointer hover:bg-surface-container-low transition-colors group"
+                className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container hover:bg-surface-container-low transition-colors group"
               >
                 <div className="grow mr-2">
                   <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
@@ -125,13 +125,13 @@ export default function ProfileCard() {
               <div className="flex bg-surface-container rounded-lg p-1">
                 <button
                   onClick={() => setLanguage("en")}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${language === "en" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${language === "en" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
                 >
                   EN
                 </button>
                 <button
                   onClick={() => setLanguage("ms")}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${language === "ms" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${language === "ms" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
                 >
                   MS
                 </button>
