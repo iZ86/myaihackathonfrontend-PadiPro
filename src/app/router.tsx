@@ -16,6 +16,7 @@ import Weather from "@routes/Weather";
 import AuthProvider from "@context/auth/AuthProvider";
 import { useAuth } from "@context/auth/useAuth";
 import { LanguageProvider } from "@context/lang/LanguageProvider";
+import Chat from "@routes/Chat";
 
 const ProtectedRoute = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -77,6 +78,10 @@ const routes = [
           {
             path: "/weather",
             element: <Weather />,
+          },
+          {
+            path: "/chat",
+            element: <Chat />,
           },
         ],
       },

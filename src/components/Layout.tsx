@@ -7,6 +7,7 @@ import {
   X,
   // Settings,
   // HelpCircle,
+  MessageSquareText,
   LogOut,
   Cloud,
 } from "lucide-react";
@@ -66,6 +67,21 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <Home className="w-5 h-5" />
             <span>Home</span>
           </NavLink> */}
+
+          <NavLink
+            to="/chat"
+            onClick={() => setIsSidebarOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  : "text-on-surface hover:bg-surface-container font-medium"
+              }`
+            }
+          >
+            <MessageSquareText className="w-5 h-5" />
+            <span>{t.nav.chat}</span>
+          </NavLink>
 
           <NavLink
             to="/weather"
@@ -191,6 +207,18 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             Home
           </span>
         </NavLink> */}
+
+        <NavLink
+          to="/chat"
+          className={({ isActive }) =>
+            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+          }
+        >
+          <MessageSquareText className="w-6 h-6" />
+          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+            {t.nav.chat}
+          </span>
+        </NavLink>
 
         <NavLink
           to="/weather"

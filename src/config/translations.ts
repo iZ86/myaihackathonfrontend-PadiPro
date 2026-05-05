@@ -23,6 +23,7 @@ export const translations = {
       history: "History",
       weather: "Weather",
       profile: "Profile",
+      chat: "Chat"
     },
     home: {
       title: "Diagnose your crops instantly.",
@@ -86,6 +87,18 @@ export const translations = {
       member: "Premium Member",
       lead: "Agricultural Lead",
       managing: "Managing PadiPro Estates"
+    },
+    chat: {
+      placeholder: "Type a message...",
+      typing: "AI is typing...",
+      send: "Send",
+      welcome: "Hello 👋 How can I help you today?",
+      q1: "What crops grow well in Malaysia?",
+      a1: "Rice, oil palm, and rubber are common crops in Malaysia due to the tropical climate.",
+      s_crops: "What crops grow well here?",
+      s_weather: "How's the field weather?",
+      s_pests: "Identify a pest issue",
+      s_advice: "General farming advice"
     }
   },
   ms: {
@@ -111,7 +124,8 @@ export const translations = {
       analysis: "Imbas",
       history: "Sejarah",
       weather: "Cuaca",
-      profile: "Profil"
+      profile: "Profil",
+      chat: "Sembang"
     },
     home: {
       title: "Diagnosis tanaman anda serta-merta.",
@@ -175,6 +189,18 @@ export const translations = {
       member: "Ahli Premium",
       lead: "Peneraju Pertanian",
       managing: "Mengurus Estet PadiPro"
+    },
+    chat: {
+      placeholder: "Taip mesej...",
+      typing: "AI sedang menaip...",
+      send: "Hantar",
+      welcome: "Halo 👋 Bagaimana saya boleh membantu anda hari ini?",
+      q1: "Tanaman apa yang tumbuh subur di Malaysia?",
+      a1: "Padi, kelapa sawit, dan getah adalah tanaman biasa di Malaysia disebabkan iklim tropika.",
+      s_crops: "Tanaman apa yang sesuai?",
+      s_weather: "Bagaimana cuaca ladang?",
+      s_pests: "Kenalpasti masalah perosak",
+      s_advice: "Nasihat pertanian umum"
     }
   }
 };
