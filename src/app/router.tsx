@@ -8,6 +8,7 @@ import {
 import { Toaster, toast } from "sonner";
 import Analysis from "@routes/Analysis";
 import DiagnosisResults from "@routes/DiagnosisResults";
+import Landing from "@routes/Landing";
 import Login from "@routes/Login";
 import Profile from "@routes/Profile";
 import History from "@routes/History";
@@ -81,11 +82,11 @@ const routes = [
       },
       {
         path: "/*",
-        element: <Navigate to="/weather" replace />,
+        element: <Navigate to="/" replace />,
       },
       {
         path: "/",
-        element: <Navigate to="/weather" replace />,
+        element: <Landing />,
       },
     ],
   },

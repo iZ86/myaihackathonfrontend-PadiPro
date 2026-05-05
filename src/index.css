@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Work+Sans:wght@300;400;500;600&display=swap');
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 @theme {
   --font-headline: "Manrope", sans-serif;
   --font-body: "Work Sans", sans-serif;
@@ -10,7 +14,7 @@
   --color-primary-container: #2d6a4f;
   --color-on-primary: #ffffff;
   --color-on-primary-container: #a8e7c5;
-  
+
   --color-secondary: #8e4e14;
   --color-secondary-container: #ffab69;
   --color-on-secondary: #ffffff;
@@ -23,7 +27,7 @@
   --color-surface: #fcf9f3;
   --color-on-surface: #1c1c18;
   --color-on-surface-variant: #404943;
-  
+
   --color-surface-container-lowest: #ffffff;
   --color-surface-container-low: #f6f3ed;
   --color-surface-container: #f0eee8;
@@ -32,7 +36,7 @@
 
   --color-outline: #707973;
   --color-outline-variant: #bfc9c1;
-  
+
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
   --color-on-error: #ffffff;
