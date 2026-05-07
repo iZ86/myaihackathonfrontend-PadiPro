@@ -16,6 +16,8 @@ import Weather from "@routes/Weather";
 import AuthProvider from "@context/auth/AuthProvider";
 import { useAuth } from "@context/auth/useAuth";
 import { LanguageProvider } from "@context/lang/LanguageProvider";
+import { LocationProvider } from "@context/location/LocationContext";
+import { useLocationPermission } from "@context/location/useLocationPermission";
 import Chat from "@routes/Chat";
 
 const ProtectedRoute = () => {
@@ -38,11 +40,23 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
+const LocationProtectedRoute = () => {
+  const { hasLocationPermission } = useLocationPermission();
+
+  if (hasLocationPermission === false) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  return <Outlet />;
+};
+
 const AuthLayout = () => (
   <LanguageProvider>
     <AuthProvider>
-      <Toaster position="top-center" richColors />
-      <Outlet />
+      <LocationProvider>
+        <Toaster position="top-center" richColors />
+        <Outlet />
+      </LocationProvider>
     </AuthProvider>
   </LanguageProvider>
 );
@@ -60,28 +74,33 @@ const routes = [
         element: <ProtectedRoute />,
         children: [
           {
-            path: "/analysis",
-            element: <Analysis />,
-          },
-          {
-            path: "/diagnosis-results",
-            element: <DiagnosisResults />,
-          },
-          {
             path: "/profile",
             element: <Profile />,
           },
           {
-            path: "/history",
-            element: <History />,
-          },
-          {
-            path: "/weather",
-            element: <Weather />,
-          },
-          {
-            path: "/chat",
-            element: <Chat />,
+            element: <LocationProtectedRoute />,
+            children: [
+              {
+                path: "/analysis",
+                element: <Analysis />,
+              },
+              {
+                path: "/diagnosis-results",
+                element: <DiagnosisResults />,
+              },
+              {
+                path: "/history",
+                element: <History />,
+              },
+              {
+                path: "/weather",
+                element: <Weather />,
+              },
+              {
+                path: "/chat",
+                element: <Chat />,
+              },
+            ],
           },
         ],
       },

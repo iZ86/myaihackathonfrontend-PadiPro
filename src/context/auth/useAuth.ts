@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (mobileNo: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  updateUser: (data: Partial<UserData>) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

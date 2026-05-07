@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
+import { useLocationPermission } from "@context/location/useLocationPermission";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ interface LayoutProps {
 export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
   const { logout } = useAuth();
   const { t } = useLanguage();
+  const { hasLocationPermission } = useLocationPermission();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -68,50 +70,54 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <span>Home</span>
           </NavLink> */}
 
-          <NavLink
-            to="/chat"
-            onClick={() => setIsSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? "bg-primary-container text-on-primary-container font-semibold"
-                  : "text-on-surface hover:bg-surface-container font-medium"
-              }`
-            }
-          >
-            <MessageSquareText className="w-5 h-5" />
-            <span>{t.nav.chat}</span>
-          </NavLink>
+          {hasLocationPermission !== false && (
+            <>
+              <NavLink
+                to="/chat"
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      : "text-on-surface hover:bg-surface-container font-medium"
+                  }`
+                }
+              >
+                <MessageSquareText className="w-5 h-5" />
+                <span>{t.nav.chat}</span>
+              </NavLink>
 
-          <NavLink
-            to="/weather"
-            onClick={() => setIsSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? "bg-primary-container text-on-primary-container font-semibold"
-                  : "text-on-surface hover:bg-surface-container font-medium"
-              }`
-            }
-          >
-            <Cloud className="w-5 h-5" />
-            <span>{t.nav.weather}</span>
-          </NavLink>
+              <NavLink
+                to="/weather"
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      : "text-on-surface hover:bg-surface-container font-medium"
+                  }`
+                }
+              >
+                <Cloud className="w-5 h-5" />
+                <span>{t.nav.weather}</span>
+              </NavLink>
 
-          <NavLink
-            to="/history"
-            onClick={() => setIsSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
-                isActive
-                  ? "bg-primary-container text-on-primary-container font-semibold"
-                  : "text-on-surface hover:bg-surface-container font-medium"
-              }`
-            }
-          >
-            <History className="w-5 h-5" />
-            <span>{t.nav.history}</span>
-          </NavLink>
+              <NavLink
+                to="/history"
+                onClick={() => setIsSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      : "text-on-surface hover:bg-surface-container font-medium"
+                  }`
+                }
+              >
+                <History className="w-5 h-5" />
+                <span>{t.nav.history}</span>
+              </NavLink>
+            </>
+          )}
 
           {/* <NavLink
             to="/products"
@@ -208,41 +214,45 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
           </span>
         </NavLink> */}
 
-        <NavLink
-          to="/chat"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-          }
-        >
-          <MessageSquareText className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            {t.nav.chat}
-          </span>
-        </NavLink>
+        {hasLocationPermission !== false && (
+          <>
+            <NavLink
+              to="/chat"
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+              }
+            >
+              <MessageSquareText className="w-6 h-6" />
+              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+                {t.nav.chat}
+              </span>
+            </NavLink>
 
-        <NavLink
-          to="/weather"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-          }
-        >
-          <Cloud className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            {t.nav.weather}
-          </span>
-        </NavLink>
+            <NavLink
+              to="/weather"
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+              }
+            >
+              <Cloud className="w-6 h-6" />
+              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+                {t.nav.weather}
+              </span>
+            </NavLink>
 
-        <NavLink
-          to="/history"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-          }
-        >
-          <History className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            {t.nav.history}
-          </span>
-        </NavLink>
+            <NavLink
+              to="/history"
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+              }
+            >
+              <History className="w-6 h-6" />
+              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
+                {t.nav.history}
+              </span>
+            </NavLink>
+          </>
+        )}
 
         {/* <NavLink
           to="/products"

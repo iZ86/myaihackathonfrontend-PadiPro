@@ -62,9 +62,13 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
+  const updateUser = (data: Partial<UserData>) => {
+    setUser((prev) => prev ? { ...prev, ...data } : null);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, isAuthenticated: !!user }}
+      value={{ user, loading, login, logout, isAuthenticated: !!user, updateUser }}
     >
       {children}
     </AuthContext.Provider>
