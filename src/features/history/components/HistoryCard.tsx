@@ -7,7 +7,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { getDiagnosisHistoryAPI } from "@features/history/api/history";
+import { getDiagnosisHistoryAPI } from "@features/user/api/users";
 import type { HistoryItem } from "@datatypes/historyType";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
