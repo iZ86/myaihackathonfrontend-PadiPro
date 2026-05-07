@@ -202,7 +202,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <Menu className="w-6 h-6 text-primary" />
           </button>
           <NavLink to="/chat" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center hero-gradient shadow-sm md:hidden">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center hero-gradient shadow-sm">
               <Leaf className="w-4 h-4 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-primary font-headline">
