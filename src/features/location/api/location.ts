@@ -3,7 +3,7 @@ import { backendServerConfig } from "@config/config";
 export async function updateUserCoordsByMobileNoAPI(mobileNo: string, latitude: number, longitude: number): Promise<Response | undefined> {
   try {
     return await fetch(`${backendServerConfig.backendServerUrl}/webchat/location/${mobileNo}`, {
-      method: 'POST',
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
