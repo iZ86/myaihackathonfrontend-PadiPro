@@ -12,6 +12,7 @@ import Landing from "@routes/Landing";
 import Login from "@routes/Login";
 import Profile from "@routes/Profile";
 import History from "@routes/History";
+import HistoryDetail from "@routes/HistoryDetail";
 import Weather from "@routes/Weather";
 import AuthProvider from "@context/auth/AuthProvider";
 import { useAuth } from "@context/auth/useAuth";
@@ -91,6 +92,10 @@ const routes = [
               {
                 path: "/history",
                 element: <History />,
+              },
+              {
+                path: "/history/:id",
+                element: <HistoryDetail />,
               },
               {
                 path: "/weather",
