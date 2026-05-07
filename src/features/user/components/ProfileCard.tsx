@@ -10,14 +10,22 @@ import {
   Sprout,
   Loader2,
   AlertCircle,
+  MapPin,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
+import { useLocationPermission } from "@context/location/useLocationPermission";
 
 export default function ProfileCard() {
   const { language, setLanguage, t } = useLanguage();
   const { loading, user, logout } = useAuth();
+  const {
+    hasLocationPermission,
+    requestLocation,
+    isLoading: isLocationLoading,
+    error: locationError,
+  } = useLocationPermission();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,6 +82,63 @@ export default function ProfileCard() {
           {t.profile.managing} • {t.profile.member}
         </p>
       </section>
+
+      {/* Location Permission Status */}
+      <motion.div
+        whileHover={{ y: -4 }}
+        className={`mb-8 rounded-xl p-6 transition-all border ${
+          hasLocationPermission
+            ? "bg-primary-container/20 border-primary/20"
+            : "bg-error-container/20 border-error/20"
+        }`}
+      >
+        <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-4">
+          <div className="flex items-center gap-4">
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                hasLocationPermission
+                  ? "bg-primary text-white"
+                  : "bg-error text-white"
+              }`}
+            >
+              <MapPin className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-headline font-bold text-lg text-on-surface">
+                {hasLocationPermission
+                  ? "Location Enabled"
+                  : "Location Required"}
+              </h3>
+              <p className="text-sm text-on-surface-variant max-w-md">
+                {hasLocationPermission
+                  ? "Your farm's location is synced for precise analysis."
+                  : "Location is required to use Chat, Weather, and History features."}
+              </p>
+              {locationError && (
+                <p className="text-xs text-error mt-2 font-medium bg-error-container/50 px-3 py-1.5 rounded-md inline-block">
+                  {locationError}
+                </p>
+              )}
+            </div>
+          </div>
+          {!hasLocationPermission && (
+            <button
+              onClick={() => requestLocation()}
+              disabled={isLocationLoading}
+              className="px-6 py-2.5 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary-fixed hover:text-on-primary-fixed transition-all flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
+            >
+              {isLocationLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Requesting...
+                </>
+              ) : (
+                "Enable Location"
+              )}
+            </button>
+          )}
+        </div>
+      </motion.div>
 
       {/* Bento Grid Settings */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
