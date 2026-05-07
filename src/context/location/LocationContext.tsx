@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { updateUserCoordsByMobileNoAPI } from "../../features/location/api/location";
+import { reverseGeocodeAPI } from "../../features/weather/api/weathers";
 import { useAuth } from "@context/auth/useAuth";
 import { LocationContext } from "./useLocation";
 
@@ -42,12 +43,15 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           try {
             await updateUserCoordsByMobileNoAPI(user.mobile_no, lat, lon);
 
+            const locationName = await reverseGeocodeAPI(lat, lon);
+
             // Update auth user state locally to unlock restricted pages immediately
             updateUser({
               coords: {
                 _latitude: lat,
                 _longitude: lon,
               },
+              location: locationName,
             });
           } catch (err) {
             console.error("Failed to sync location to backend:", err);
