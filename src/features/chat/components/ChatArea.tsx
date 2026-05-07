@@ -19,6 +19,8 @@ import {
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
 import AudioPlayer from "./AudioPlayer";
+import { useAuth } from "@context/auth/useAuth";
+import { uploadChatFile } from "../api/chat";
 
 interface MediaAttachment {
   file: File;
@@ -34,9 +36,11 @@ const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES];
 
 export default function ChatArea() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [media, setMedia] = useState<MediaAttachment | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -180,20 +184,37 @@ export default function ChatArea() {
 
   const handleSend = async (text: string = input) => {
     const finalInput = text.trim();
-    if ((!finalInput && !media && !audioURL) || isTyping) return;
+    if ((!finalInput && !media && !audioURL) || isTyping || isUploading) return;
 
     let messageType: Message["type"] = "text";
     let mediaUrlValue: string | undefined = undefined;
     let contentValue = finalInput;
 
-    if (media) {
-      messageType = media.type;
-      mediaUrlValue = media.previewUrl;
-    } else if (audioURL) {
-      messageType = "audio";
-      mediaUrlValue = audioURL;
-      // Audio messages show "Voice message" as display text
-      contentValue = contentValue || "Voice message";
+    const mobileNo = user?.mobile_no || "unknown";
+
+    if (media || audioURL) {
+      setIsUploading(true);
+      try {
+        let fileToUpload: File;
+        
+        if (media) {
+          fileToUpload = media.file;
+          messageType = media.type;
+        } else {
+          const generatedBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          fileToUpload = new File([generatedBlob], "audio_message.webm", { type: "audio/webm" });
+          messageType = "audio";
+          contentValue = contentValue || "Voice message";
+        }
+
+        mediaUrlValue = await uploadChatFile(fileToUpload);
+      } catch (error) {
+        console.error("Upload failed:", error);
+        alert("Failed to upload media. Please try again.");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     const userMessage: Message = {
@@ -565,11 +586,11 @@ export default function ChatArea() {
             {audioURL && !isRecording && (
               <div className="grow flex items-center gap-3 px-2 h-13.5">
                 <div className="flex-1 min-w-0">
-                  <AudioPlayer 
+                  <AudioPlayer
                     id="preview"
                     activeAudioId={activeAudioId}
-                    src={audioURL} 
-                    variant="preview" 
+                    src={audioURL}
+                    variant="preview"
                     onPlay={setActiveAudioId}
                   />
                 </div>
@@ -597,9 +618,9 @@ export default function ChatArea() {
                   <button
                     type="button"
                     onClick={startRecording}
-                    disabled={isTyping}
+                    disabled={isTyping || isUploading}
                     className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      isTyping
+                      isTyping || isUploading
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
                         : "text-on-surface-variant hover:text-primary hover:bg-primary/5 active:scale-95"
                     }`}
@@ -610,15 +631,15 @@ export default function ChatArea() {
                   <button
                     type="submit"
                     disabled={
-                      (!input.trim() && !media && !audioURL) || isTyping
+                      (!input.trim() && !media && !audioURL) || isTyping || isUploading
                     }
                     className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      (!input.trim() && !media && !audioURL) || isTyping
+                      (!input.trim() && !media && !audioURL) || isTyping || isUploading
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
                         : "bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 active:scale-95"
                     }`}
                   >
-                    {isTyping ? (
+                    {isTyping || isUploading ? (
                       <Loader2 size={24} className="animate-spin" />
                     ) : (
                       <Send size={24} />
