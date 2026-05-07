@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   History,
   User,
@@ -10,6 +10,7 @@ import {
   MessageSquareText,
   LogOut,
   Cloud,
+  Leaf,
 } from "lucide-react";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
@@ -21,10 +22,27 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { t } = useLanguage();
   const { hasLocationPermission } = useLocationPermission();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  const pageTitles: Record<string, string> = {
+    "/chat": t.nav.chat,
+    "/weather": t.nav.weather,
+    "/history": t.nav.history,
+    "/profile": t.nav.profile,
+  };
+  const currentTitle = pageTitles[location.pathname] || title;
+
+  const getInitials = (name?: string) =>
+    (name || "")
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "P";
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
@@ -43,12 +61,17 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         }`}
       >
         <div className="flex items-center justify-between p-6 pb-2">
-          <h2 className="text-2xl font-bold text-primary font-headline">
-            PadiPro
-          </h2>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center hero-gradient shadow-sm">
+              <Leaf className="w-4 h-4 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-primary font-headline">
+              PadiPro
+            </h2>
+          </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="p-2 rounded-full hover:bg-surface-container transition-colors hidden md:flex"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors"
           >
             <X className="w-6 h-6 text-on-surface" />
           </button>
@@ -76,9 +99,9 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
                 to="/chat"
                 onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  `flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      ? "bg-primary/10 text-primary font-semibold"
                       : "text-on-surface hover:bg-surface-container font-medium"
                   }`
                 }
@@ -91,9 +114,9 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
                 to="/weather"
                 onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  `flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      ? "bg-primary/10 text-primary font-semibold"
                       : "text-on-surface hover:bg-surface-container font-medium"
                   }`
                 }
@@ -106,9 +129,9 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
                 to="/history"
                 onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+                  `flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-primary-container text-on-primary-container font-semibold"
+                      ? "bg-primary/10 text-primary font-semibold"
                       : "text-on-surface hover:bg-surface-container font-medium"
                   }`
                 }
@@ -138,9 +161,9 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             to="/profile"
             onClick={() => setIsSidebarOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-4 px-4 py-3 rounded-lg transition-colors ${
+              `flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
                 isActive
-                  ? "bg-primary-container text-on-primary-container font-semibold"
+                  ? "bg-primary/10 text-primary font-semibold"
                   : "text-on-surface hover:bg-surface-container font-medium"
               }`
             }
@@ -162,7 +185,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
           <NavLink
             to="/login"
             onClick={logout}
-            className="flex items-center gap-4 px-4 py-3 w-full rounded-lg text-error hover:bg-error-container hover:text-on-error-container font-medium transition-colors mt-2"
+            className="flex items-center gap-4 px-4 py-3 w-full rounded-xl text-error hover:bg-error-container hover:text-on-error-container font-medium transition-all mt-2"
           >
             <LogOut className="w-5 h-5" />
             <span>{t.auth.logout}</span>
@@ -170,31 +193,29 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         </div>
       </div>
 
-      <header className="flex fixed top-0 w-full z-50 glass-nav shadow-sm items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-4">
+      <header className="flex fixed top-0 w-full z-50 glass-nav shadow-sm items-center justify-between px-4 md:px-6 py-3 md:py-4">
+        <div className="flex items-center gap-3">
           <button
             className="p-2 rounded-full hover:bg-surface-container transition-colors hidden md:flex cursor-pointer"
             onClick={() => setIsSidebarOpen(true)}
           >
-            <Menu className="hidden md:flex w-6 h-6 text-primary" />
+            <Menu className="w-6 h-6 text-primary" />
           </button>
-          <NavLink
-            to="/weather"
-            className="text-xl font-bold tracking-tight text-primary font-headline"
-          >
-            {title}
+          <NavLink to="/chat" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center hero-gradient shadow-sm md:hidden">
+              <Leaf className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-primary font-headline">
+              <span className="md:hidden">{currentTitle}</span>
+              <span className="hidden md:inline">PadiPro</span>
+            </span>
           </NavLink>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden border-2 border-primary/10">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuANiDEfhF5vah48UIKmhxyPfcn1EScYC3Wc0BcOKFLepNTUtNqs2AM_y7oF731PEijw2ymQmt4ZZqWWhg_iiflqQ4PARqF1rHwGXfm2n22fgWBuBBXYYnUwDwo-uZCuT7G0XBWKu-RlclmJ6QsmlADaoQCMoUaRYz0ZcVRLIB9ORLY-4gU-O06Ku-okkK9VWsBdNDf0VtCKIvyCmRrfjFbIxGq4Gz_E1R-s3WBCvUp0cfc-GCH4B_oirv9AeryzgDnorzQGULnPGLRr"
-              alt="Profile"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+        <NavLink to="/profile" className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-full hero-gradient flex items-center justify-center text-white font-bold text-sm border-2 border-primary/20 shadow-sm select-none">
+            {getInitials(user?.name)}
           </div>
-        </div>
+        </NavLink>
       </header>
 
       <main className="flex-1 pt-20 pb-32">{children}</main>
@@ -219,7 +240,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <NavLink
               to="/chat"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
               }
             >
               <MessageSquareText className="w-6 h-6" />
@@ -231,7 +252,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <NavLink
               to="/weather"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
               }
             >
               <Cloud className="w-6 h-6" />
@@ -243,7 +264,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
             <NavLink
               to="/history"
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
               }
             >
               <History className="w-6 h-6" />
@@ -269,7 +290,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         <NavLink
           to="/profile"
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
+            `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
           }
         >
           <User className="w-6 h-6" />

@@ -9,73 +9,90 @@ import {
   AnimatePresence,
 } from "motion/react";
 import {
+  MessageSquareText,
+  Cloud,
   ScanLine,
-  Zap,
-  TrendingUp,
-  CloudCog,
-  FileText,
+  Leaf,
+  ArrowRight,
   Play,
   CheckCircle2,
-  Leaf,
-  Cpu,
-  ShieldCheck,
-  ArrowRight,
-  Microscope,
-  BarChart3,
-  AlertTriangle,
-  Sprout,
-  ChevronRight,
-  SquareStack,
   Brain,
+  Cpu,
+  Zap,
+  TrendingUp,
+  Shield,
+  Camera,
+  Sprout,
+  Droplets,
+  Wind,
+  BarChart3,
+  Bot,
+  Sparkles,
+  CloudRain,
+  SquareStack,
+  CloudSun,
+  Sun,
 } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 
-/* ─── Animated counter hook ─────────────────────────────────── */
-function useCounter(target: number, duration = 1800, start = false) {
+/* ─── useCounter ─────────────────────────────────────────────── */
+function useCounter(target: number, duration = 1600, start = false) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     if (!start) return;
-    let startTime: number | null = null;
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(eased * target));
-      if (progress < 1) requestAnimationFrame(step);
+    let t0: number | null = null;
+    const step = (ts: number) => {
+      if (!t0) t0 = ts;
+      const p = Math.min((ts - t0) / duration, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      setCount(Math.floor(e * target));
+      if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }, [start, target, duration]);
   return count;
 }
 
-/* ─── Mock AI scan card ──────────────────────────────────────── */
-function AIScanCard() {
-  const [scanning, setScanning] = useState(true);
-  const [detected, setDetected] = useState(false);
+/* ─── Hero chat mockup ───────────────────────────────────────── */
+function HeroChatMockup() {
+  const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setScanning(false), 2200);
-    const t2 = setTimeout(() => setDetected(true), 2600);
+    const t1 = setTimeout(() => setPhase(1), 700);
+    const t2 = setTimeout(() => setPhase(2), 1600);
+    const t3 = setTimeout(() => setPhase(3), 2800);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
     };
   }, []);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      initial={{ opacity: 0, y: 40, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.9, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
       className="relative w-full max-w-sm mx-auto"
       style={{ filter: "drop-shadow(0 32px 64px rgba(15,82,56,0.18))" }}
     >
+      {/* Glow behind card */}
       <div
-        className="rounded-3xl overflow-hidden"
+        className="absolute -inset-4 rounded-[2.5rem] pointer-events-none"
         style={{
-          background: "rgba(252,249,243,0.95)",
+          background:
+            "radial-gradient(ellipse at center, rgba(15,82,56,0.1) 0%, transparent 70%)",
+          filter: "blur(20px)",
+        }}
+      />
+
+      {/* Card */}
+      <div
+        className="relative rounded-3xl overflow-hidden"
+        style={{
+          background: "rgba(252,249,243,0.97)",
+          backdropFilter: "blur(24px)",
           border: "1px solid rgba(15,82,56,0.12)",
-          backdropFilter: "blur(20px)",
         }}
       >
         {/* Card header */}
@@ -86,23 +103,25 @@ function AIScanCard() {
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg,#0f5238,#2d6a4f)" }}
+              style={{
+                background: "linear-gradient(135deg, #0f5238, #2d6a4f)",
+              }}
             >
-              <Microscope className="w-4 h-4 text-white" />
+              <Bot className="w-4 h-4 text-white" />
             </div>
             <div>
               <p
                 style={{
-                  fontFamily: "'Manrope',sans-serif",
+                  fontFamily: "'Manrope', sans-serif",
                   fontWeight: 700,
                   fontSize: "0.8rem",
                   color: "#1c1c18",
                 }}
               >
-                PadiPro Scan
+                PaddyAI
               </p>
-              <p style={{ fontSize: "0.68rem", color: "#707973" }}>
-                Live Analysis
+              <p style={{ fontSize: "0.65rem", color: "#707973" }}>
+                Smart Crop Assistant
               </p>
             </div>
           </div>
@@ -110,300 +129,335 @@ function AIScanCard() {
             <span className="relative flex h-2 w-2">
               <span
                 className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                style={{ backgroundColor: scanning ? "#8e4e14" : "#0f5238" }}
+                style={{ backgroundColor: "#0f5238" }}
               />
               <span
                 className="relative inline-flex rounded-full h-2 w-2"
-                style={{ backgroundColor: scanning ? "#8e4e14" : "#0f5238" }}
+                style={{ backgroundColor: "#0f5238" }}
               />
             </span>
             <span
               style={{
-                fontSize: "0.68rem",
+                fontSize: "0.65rem",
                 fontWeight: 600,
-                color: scanning ? "#8e4e14" : "#0f5238",
+                color: "#0f5238",
               }}
             >
-              {scanning ? "Scanning…" : "Complete"}
+              Live
             </span>
           </div>
         </div>
 
-        {/* Crop image area */}
-        <div
-          className="relative h-44 overflow-hidden"
-          style={{ backgroundColor: "#e8f5ee" }}
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse at 40% 50%, #2d6a4f 0%, #0f5238 40%, #1a3d2a 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px)",
-            }}
-          />
-
+        {/* Messages area */}
+        <div className="px-4 py-4 space-y-4 min-h-[260px]">
+          {/* User message */}
           <AnimatePresence>
-            {scanning && (
+            {phase >= 1 && (
               <motion.div
-                className="absolute left-0 right-0 h-0.5"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, rgba(168,231,197,0.9), transparent)",
-                }}
-                initial={{ top: "0%" }}
-                animate={{ top: "100%" }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.8, ease: "linear" }}
-              />
-            )}
-          </AnimatePresence>
-
-          {scanning && (
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(168,231,197,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(168,231,197,0.08) 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-          )}
-
-          <AnimatePresence>
-            {detected && (
-              <motion.div
-                className="absolute"
-                style={{ top: "20%", left: "25%", width: "50%", height: "55%" }}
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-end"
               >
                 <div
+                  className="max-w-[85%] rounded-2xl rounded-tr-sm px-4 py-3"
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    border: "2px solid rgba(255,171,105,0.9)",
-                    borderRadius: "8px",
-                    boxShadow:
-                      "0 0 20px rgba(142,78,20,0.4), inset 0 0 20px rgba(142,78,20,0.05)",
-                  }}
-                />
-                {[
-                  { top: -2, left: -2 },
-                  { top: -2, right: -2 },
-                  { bottom: -2, left: -2 },
-                  { bottom: -2, right: -2 },
-                ].map((pos, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-3 h-3"
-                    style={{
-                      ...pos,
-                      border: "2px solid #ffab69",
-                      borderRadius: "2px",
-                    }}
-                  />
-                ))}
-                <div
-                  className="absolute -top-7 left-0"
-                  style={{
-                    backgroundColor: "rgba(142,78,20,0.9)",
-                    borderRadius: "4px",
-                    padding: "2px 8px",
-                    fontSize: "0.62rem",
-                    fontWeight: 700,
-                    color: "#fff",
-                    fontFamily: "'Manrope',sans-serif",
-                    whiteSpace: "nowrap",
+                    background: "linear-gradient(135deg,#0f5238,#2d6a4f)",
                   }}
                 >
-                  Brown Spot — 94.7%
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "rgba(255,255,255,0.9)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Found spots on my rice leaves. What is this?
+                  </p>
+                  {/* Leaf image placeholder */}
+                  <div
+                    className="w-full h-24 rounded-xl overflow-hidden relative"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #14532d 0%, #052e16 100%)",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(168,231,197,0.08) 8px, rgba(168,231,197,0.08) 9px)",
+                      }}
+                    />
+                    <div
+                      className="absolute"
+                      style={{
+                        top: "32%",
+                        left: "38%",
+                        width: "30px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        border: "1.5px solid rgba(255,171,105,0.85)",
+                        boxShadow: "0 0 10px rgba(142,78,20,0.35)",
+                      }}
+                    />
+                    <div
+                      className="absolute"
+                      style={{
+                        top: "55%",
+                        left: "60%",
+                        width: "20px",
+                        height: "16px",
+                        borderRadius: "50%",
+                        border: "1.5px solid rgba(255,171,105,0.6)",
+                      }}
+                    />
+                    <p
+                      className="absolute bottom-2 left-2"
+                      style={{
+                        fontSize: "0.55rem",
+                        fontWeight: 700,
+                        color: "rgba(168,231,197,0.6)",
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Field Sample
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
 
-        {/* Results */}
-        <div className="px-5 py-4 space-y-3">
+          {/* Typing indicator */}
           <AnimatePresence>
-            {detected ? (
+            {phase === 2 && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between"
+                exit={{ opacity: 0 }}
+                className="flex gap-2.5 items-start"
               >
-                <div>
-                  <p
-                    style={{
-                      fontFamily: "'Manrope',sans-serif",
-                      fontWeight: 800,
-                      fontSize: "0.85rem",
-                      color: "#1c1c18",
-                    }}
-                  >
-                    Brown Spot Disease
-                  </p>
-                  <p style={{ fontSize: "0.68rem", color: "#707973" }}>
-                    Helminthosporium oryzae
-                  </p>
-                </div>
                 <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                   style={{
-                    backgroundColor: "rgba(142,78,20,0.1)",
-                    border: "1px solid rgba(142,78,20,0.2)",
-                    borderRadius: "999px",
-                    padding: "3px 10px",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    color: "#8e4e14",
-                    fontFamily: "'Manrope',sans-serif",
+                    background: "rgba(15,82,56,0.08)",
+                    border: "1px solid rgba(15,82,56,0.15)",
                   }}
                 >
-                  High Risk
+                  <Brain className="w-3.5 h-3.5" style={{ color: "#0f5238" }} />
+                </div>
+                <div
+                  className="px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1.5 items-center"
+                  style={{
+                    background: "#fff",
+                    border: "1px solid rgba(15,82,56,0.1)",
+                  }}
+                >
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1.2,
+                        delay: i * 0.2,
+                      }}
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: "rgba(15,82,56,0.5)" }}
+                    />
+                  ))}
                 </div>
               </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-2"
-              >
-                {[{ w: "70%" }, { w: "50%" }].map((s, i) => (
-                  <div
-                    key={i}
-                    className="h-3 rounded animate-pulse"
-                    style={{ width: s.w, backgroundColor: "#e5e2dc" }}
-                  />
-                ))}
-              </motion.div>
             )}
           </AnimatePresence>
 
+          {/* AI response */}
           <AnimatePresence>
-            {detected && (
+            {phase >= 3 && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="space-y-1.5"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-2.5 items-start"
               >
-                {[
-                  { label: "Confidence", value: 94.7, color: "#0f5238" },
-                  { label: "Severity", value: 72, color: "#8e4e14" },
-                ].map((bar) => (
-                  <div key={bar.label}>
-                    <div
-                      className="flex justify-between mb-0.5"
-                      style={{ fontSize: "0.65rem", color: "#707973" }}
-                    >
-                      <span>{bar.label}</span>
-                      <span style={{ fontWeight: 700, color: bar.color }}>
-                        {bar.value}%
-                      </span>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{
+                    background: "rgba(15,82,56,0.08)",
+                    border: "1px solid rgba(15,82,56,0.15)",
+                  }}
+                >
+                  <Brain className="w-3.5 h-3.5" style={{ color: "#0f5238" }} />
+                </div>
+                <div
+                  className="flex-1 px-4 py-3 rounded-2xl rounded-tl-sm space-y-3"
+                  style={{
+                    background: "#fff",
+                    border: "1px solid rgba(15,82,56,0.1)",
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "0.75rem",
+                          color: "#1c1c18",
+                        }}
+                      >
+                        Brown Spot Disease
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.6rem",
+                          color: "#707973",
+                          marginTop: "1px",
+                        }}
+                      >
+                        Helminthosporium oryzae
+                      </p>
                     </div>
                     <div
-                      className="h-1.5 rounded-full"
-                      style={{ backgroundColor: "#e5e2dc" }}
+                      className="px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(142,78,20,0.1)",
+                        border: "1px solid rgba(142,78,20,0.2)",
+                        fontSize: "0.55rem",
+                        fontWeight: 700,
+                        color: "#8e4e14",
+                      }}
                     >
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: bar.color }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${bar.value}%` }}
-                        transition={{
-                          duration: 0.8,
-                          delay: 0.3,
-                          ease: "easeOut",
-                        }}
-                      />
+                      HIGH RISK
                     </div>
                   </div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {detected && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="flex items-center gap-2"
-                style={{ borderTop: "1px solid #e5e2dc", paddingTop: "10px" }}
-              >
-                <CheckCircle2
-                  className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: "#0f5238" }}
-                />
-                <p style={{ fontSize: "0.68rem", color: "#404943" }}>
-                  Treatment plan ready ·{" "}
-                  <span style={{ color: "#0f5238", fontWeight: 700 }}>
-                    View recommendations →
-                  </span>
-                </p>
+                  {[
+                    { label: "Confidence", value: 94.7, color: "#0f5238" },
+                    { label: "Severity", value: 72, color: "#8e4e14" },
+                  ].map((bar) => (
+                    <div key={bar.label}>
+                      <div
+                        className="flex justify-between mb-0.5"
+                        style={{ fontSize: "0.6rem" }}
+                      >
+                        <span style={{ color: "#707973" }}>{bar.label}</span>
+                        <span style={{ fontWeight: 700, color: bar.color }}>
+                          {bar.value}%
+                        </span>
+                      </div>
+                      <div
+                        className="h-1.5 rounded-full"
+                        style={{ background: "#e5e2dc" }}
+                      >
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: bar.color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${bar.value}%` }}
+                          transition={{ duration: 0.8, delay: 0.3 }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    className="flex items-center gap-1.5 pt-1"
+                    style={{ borderTop: "1px solid rgba(15,82,56,0.08)" }}
+                  >
+                    <CheckCircle2
+                      className="w-3 h-3 shrink-0"
+                      style={{ color: "#0f5238" }}
+                    />
+                    <p style={{ fontSize: "0.62rem", color: "#707973" }}>
+                      Treatment plan ready ·{" "}
+                      <span style={{ color: "#0f5238", fontWeight: 700 }}>
+                        View Plan →
+                      </span>
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* Input bar */}
+        <div
+          className="px-4 py-3"
+          style={{ borderTop: "1px solid rgba(15,82,56,0.08)" }}
+        >
+          <div
+            className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+            style={{
+              background: "#f6f3ed",
+              border: "1px solid rgba(15,82,56,0.08)",
+            }}
+          >
+            <span
+              className="flex-1"
+              style={{ fontSize: "0.72rem", color: "#bfc9c1" }}
+            >
+              Ask about your crops…
+            </span>
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg,#0f5238,#2d6a4f)" }}
+            >
+              <ArrowRight className="w-3 h-3 text-white" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Floating pills */}
+      {/* Floating weather pill */}
       <motion.div
-        className="absolute -left-8 top-1/3 rounded-2xl px-3 py-2 flex items-center gap-2"
+        className="absolute -left-10 top-[22%] flex items-center gap-2 px-3 py-2 rounded-2xl"
         style={{
           background: "rgba(252,249,243,0.95)",
+          backdropFilter: "blur(16px)",
           border: "1px solid rgba(15,82,56,0.12)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 8px 32px rgba(15,82,56,0.12)",
+          boxShadow: "0 8px 32px rgba(15,82,56,0.1)",
         }}
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
+        transition={{ delay: 1.5, duration: 0.6 }}
       >
-        <Zap className="w-3.5 h-3.5" style={{ color: "#8e4e14" }} />
+        <CloudSun className="w-3.5 h-3.5" style={{ color: "#8e4e14" }} />
         <span
           style={{
-            fontSize: "0.7rem",
+            fontSize: "0.68rem",
             fontWeight: 700,
-            fontFamily: "'Manrope',sans-serif",
             color: "#1c1c18",
+            fontFamily: "'Manrope',sans-serif",
+            whiteSpace: "nowrap",
           }}
         >
-          1.4s inference
+          28°C · Partly Cloudy
         </span>
       </motion.div>
 
+      {/* Floating accuracy badge */}
       <motion.div
-        className="absolute -right-6 bottom-1/4 rounded-2xl px-3 py-2 flex items-center gap-2"
+        className="absolute -right-8 bottom-[18%] flex items-center gap-2 px-3 py-2 rounded-2xl"
         style={{
           background: "rgba(252,249,243,0.95)",
-          border: "1px solid rgba(15,82,56,0.12)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 8px 32px rgba(15,82,56,0.12)",
+          backdropFilter: "blur(16px)",
+          border: "1px solid rgba(15,82,56,0.15)",
+          boxShadow: "0 8px 32px rgba(15,82,56,0.1)",
         }}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.4, duration: 0.6 }}
+        transition={{ delay: 1.8, duration: 0.6 }}
       >
-        <BarChart3 className="w-3.5 h-3.5" style={{ color: "#0f5238" }} />
+        <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#0f5238" }} />
         <span
           style={{
-            fontSize: "0.7rem",
+            fontSize: "0.68rem",
             fontWeight: 700,
+            color: "#0f5238",
             fontFamily: "'Manrope',sans-serif",
-            color: "#1c1c18",
+            whiteSpace: "nowrap",
           }}
         >
-          95% accuracy
+          95% Accuracy
         </span>
       </motion.div>
     </motion.div>
@@ -424,36 +478,23 @@ function MetricCard({
 }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
-  const count = useCounter(value, 1600, inView);
+  const count = useCounter(value, 1400, inView);
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay, ease: "easeOut" }}
-      whileHover={{ y: -4, boxShadow: "0 16px 48px rgba(15,82,56,0.1)" }}
-      className="text-center px-6 py-8 rounded-3xl relative overflow-hidden group cursor-default"
-      style={{
-        background: "rgba(252,249,243,0.7)",
-        border: "1px solid rgba(15,82,56,0.1)",
-        backdropFilter: "blur(12px)",
-      }}
+      className="text-center py-8 px-6"
     >
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{
-          background:
-            "radial-gradient(ellipse at center top, rgba(15,82,56,0.05), transparent 70%)",
-        }}
-      />
-      <div
-        className="text-4xl md:text-5xl font-extrabold mb-2"
+        className="text-5xl font-extrabold mb-2 tabular-nums"
         style={{
           fontFamily: "'Manrope',sans-serif",
-          color: "#0f5238",
           letterSpacing: "-0.04em",
+          color: "#0f5238",
         }}
       >
         {suffix === "<" ? `<${count}s` : `${count}${suffix}`}
@@ -473,76 +514,94 @@ export default function Landing() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "35%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-
-  const fadeUp = {
-    hidden: { opacity: 0, y: 28 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as any },
-    },
-  };
+  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
   const features = [
     {
+      icon: <MessageSquareText className="w-5 h-5" />,
+      title: "AI Farming Chat",
+      desc: "Ask anything — diseases, weather windows, fertiliser schedules. Gemini-powered answers in seconds.",
+      color: "#0f5238",
+      bg: "rgba(15,82,56,0.08)",
+    },
+    {
       icon: <ScanLine className="w-5 h-5" />,
-      title: "Real-Time Disease Detection",
-      desc: "Computer vision models identify 40+ paddy diseases from a single photo with clinical-grade precision.",
-      color: "#0f5238",
+      title: "Disease Detection",
+      desc: "Upload a leaf photo. Our Vertex AI model identifies 40+ paddy diseases with 95% clinical accuracy.",
+      color: "#2d6a4f",
+      bg: "rgba(45,106,79,0.08)",
     },
     {
-      icon: <Cpu className="w-5 h-5" />,
-      title: "AI Treatment Engine",
-      desc: "Generative AI builds step-by-step agronomic treatment plans tailored to your crop's specific condition.",
-      color: "#0f5238",
+      icon: <CloudRain className="w-5 h-5" />,
+      title: "Weather Intelligence",
+      desc: "Hyper-local forecasts with agronomic alerts — optimal spray windows, irrigation triggers, frost warnings.",
+      color: "#0369a1",
+      bg: "rgba(3,105,161,0.07)",
     },
     {
-      icon: <CloudCog className="w-5 h-5" />,
-      title: "Vertex AI Infrastructure",
-      desc: "Serverless, auto-scaling inference on Google Cloud — zero cold starts even at peak harvest season.",
-      color: "#8e4e14",
-    },
-    {
-      icon: <Zap className="w-5 h-5" />,
-      title: "Sub-2s Results",
-      desc: "Optimised model serving delivers full diagnostic reports in under two seconds, directly on-device.",
-      color: "#8e4e14",
+      icon: <Camera className="w-5 h-5" />,
+      title: "Media Upload",
+      desc: "Send images, videos, or voice notes. PadiPro processes all media formats for full-context analysis.",
+      color: "#7c3aed",
+      bg: "rgba(124,58,237,0.07)",
     },
     {
       icon: <TrendingUp className="w-5 h-5" />,
-      title: "Yield Risk Forecasting",
-      desc: "Predictive analytics surface early warning signals before visible symptoms appear, minimising loss.",
-      color: "#0f5238",
+      title: "Yield Forecasting",
+      desc: "Predictive risk scoring surfaces early warnings before visible symptoms — protect harvest before it's too late.",
+      color: "#92400e",
+      bg: "rgba(146,64,14,0.07)",
     },
     {
-      icon: <ShieldCheck className="w-5 h-5" />,
-      title: "Enterprise-Grade Privacy",
-      desc: "End-to-end encryption and on-prem options ensure your farm data never leaves your control.",
-      color: "#0f5238",
+      icon: <Shield className="w-5 h-5" />,
+      title: "Data Privacy",
+      desc: "End-to-end encryption, farm-level data isolation, and on-premise options. Your data stays yours.",
+      color: "#8e4e14",
+      bg: "rgba(142,78,20,0.07)",
     },
   ];
 
-  const steps = [
+  const benefits = [
     {
-      step: "01",
-      icon: <ScanLine className="w-5 h-5" style={{ color: "#0f5238" }} />,
-      title: "Capture",
-      desc: "Point your phone at any affected leaf. Our guided UI ensures optimal image quality even in field conditions.",
+      icon: <Zap className="w-6 h-6" />,
+      metric: "10× faster",
+      title: "Diagnose in seconds",
+      desc: "What used to take expert consultations now happens in under 2 seconds. Field-to-fix instantly.",
     },
     {
-      step: "02",
-      icon: <CloudCog className="w-5 h-5" style={{ color: "#0f5238" }} />,
-      title: "Analyse",
-      desc: "Vertex AI runs multi-model ensemble inference — classifying disease, severity, and spread risk simultaneously.",
+      icon: <TrendingUp className="w-6 h-6" />,
+      metric: "40% less loss",
+      title: "Protect your yield",
+      desc: "Early AI detection catches diseases 72 hours before visible damage — before losses are unavoidable.",
     },
     {
-      step: "03",
-      icon: <FileText className="w-5 h-5" style={{ color: "#0f5238" }} />,
-      title: "Act",
-      desc: "Receive a structured report with chemical recommendations, dosage, and a follow-up monitoring schedule.",
+      icon: <Brain className="w-6 h-6" />,
+      metric: "24/7 on-call",
+      title: "Expert AI always ready",
+      desc: "Agronomist-grade knowledge accessible at 3 AM in the middle of a paddy field. No signal, no problem.",
     },
+    {
+      icon: <Sprout className="w-6 h-6" />,
+      metric: "40+ diseases",
+      title: "Complete coverage",
+      desc: "From blast to sheath rot, brown spot to bacterial blight — all major paddy diseases in one model.",
+    },
+  ];
+
+  const techLogos = [
+    { name: "Google Cloud", icon: <Cpu className="w-4 h-4" /> },
+    { name: "Vertex AI", icon: <Brain className="w-4 h-4" /> },
+    { name: "Gemini", icon: <Sparkles className="w-4 h-4" /> },
+    { name: "Express.js", icon: <SquareStack className="w-4 h-4" /> },
+    { name: "React", icon: <Sprout className="w-4 h-4" /> },
+    { name: "Firestore", icon: <BarChart3 className="w-4 h-4" /> },
+    { name: "Google Cloud", icon: <Cpu className="w-4 h-4" /> },
+    { name: "Vertex AI", icon: <Brain className="w-4 h-4" /> },
+    { name: "Gemini", icon: <Sparkles className="w-4 h-4" /> },
+    { name: "Express.js", icon: <SquareStack className="w-4 h-4" /> },
+    { name: "React", icon: <Sprout className="w-4 h-4" /> },
+    { name: "Firestore", icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
   return (
@@ -554,84 +613,91 @@ export default function Landing() {
         fontFamily: "'Work Sans', sans-serif",
       }}
     >
-      {/* ── HEADER ── */}
+      {/* ── NAV ── */}
       <motion.header
-        className="fixed top-0 left-0 right-0 z-50"
-        initial={{ y: -20, opacity: 0 }}
+        initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="fixed top-0 left-0 right-0 z-50"
         style={{
           borderBottom: "1px solid rgba(191,201,193,0.4)",
           backgroundColor: "rgba(252,249,243,0.82)",
           backdropFilter: "blur(20px)",
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-2.5">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{
                 background: "linear-gradient(135deg,#0f5238,#2d6a4f)",
-                boxShadow: "0 0 16px rgba(15,82,56,0.3)",
+                boxShadow: "0 0 16px rgba(15,82,56,0.25)",
               }}
             >
               <Leaf className="w-4 h-4 text-white" />
             </div>
-            <a href="/">
-              <span
-                style={{
-                  fontFamily: "'Manrope',sans-serif",
-                  fontWeight: 800,
-                  fontSize: "1.15rem",
-                  letterSpacing: "-0.02em",
-                  color: "#0f5238",
-                }}
-              >
-                PadiPro
-              </span>
-            </a>
+            <span
+              style={{
+                fontFamily: "'Manrope',sans-serif",
+                fontWeight: 800,
+                fontSize: "1.1rem",
+                letterSpacing: "-0.02em",
+                color: "#0f5238",
+              }}
+            >
+              PadiPro
+            </span>
           </div>
 
+          {/* Nav links */}
           <nav className="hidden md:flex items-center gap-1">
-            {["How it works", "Features", "Technology"].map((item) => (
+            {[
+              ["How It Works", "#how-it-works"],
+              ["Features", "#features"],
+              ["Technology", "#technology"],
+            ].map(([label, href]) => (
               <a
-                href={
-                  item === "How it works"
-                    ? "#how-it-works"
-                    : item === "Features"
-                      ? "#features"
-                      : "#technology"
-                }
-                key={item}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                key={label}
+                href={href}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                 style={{ color: "#404943" }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.backgroundColor =
+                  (e.currentTarget as HTMLElement).style.color = "#0f5238";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
                     "rgba(15,82,56,0.06)";
-                  (e.target as HTMLElement).style.color = "#0f5238";
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.backgroundColor =
+                  (e.currentTarget as HTMLElement).style.color = "#404943";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
                     "transparent";
-                  (e.target as HTMLElement).style.color = "#404943";
                 }}
               >
-                {item}
+                {label}
               </a>
             ))}
           </nav>
 
+          {/* CTA */}
           <button
             onClick={() => navigate("/login")}
-            className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
             style={{
               fontFamily: "'Manrope',sans-serif",
-              backgroundColor: "#0f5238",
+              background: "linear-gradient(135deg,#0f5238,#2d6a4f)",
               color: "#fff",
               boxShadow: "0 4px 16px rgba(15,82,56,0.28)",
             }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.boxShadow =
+                "0 6px 24px rgba(15,82,56,0.4)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.boxShadow =
+                "0 4px 16px rgba(15,82,56,0.28)";
+            }}
           >
-            Log In <ChevronRight className="w-3.5 h-3.5" />
+            Get Started
           </button>
         </div>
       </motion.header>
@@ -639,54 +705,61 @@ export default function Landing() {
       {/* ── HERO ── */}
       <main
         ref={heroRef}
-        className="relative pt-32 pb-20 xl:pt-0 md:pb-28 overflow-hidden min-h-screen flex items-center"
+        className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden min-h-screen flex items-center"
+        style={{ backgroundColor: "#fcf9f3" }}
       >
+        {/* Background FX */}
         <motion.div
           style={{ y: heroY, opacity: heroOpacity }}
           className="absolute inset-0 z-0 pointer-events-none"
         >
+          {/* Green glow top-left */}
           <div
-            className="absolute -top-[20%] -left-[10%] w-175 h-175 rounded-full"
+            className="absolute -top-[10%] -left-[5%] w-[600px] h-[600px] rounded-full"
             style={{
               background:
                 "radial-gradient(ellipse, rgba(15,82,56,0.1) 0%, transparent 65%)",
-              filter: "blur(40px)",
-            }}
-          />
-          <div
-            className="absolute top-[30%] -right-[5%] w-125 h-125 rounded-full"
-            style={{
-              background:
-                "radial-gradient(ellipse, rgba(142,78,20,0.07) 0%, transparent 65%)",
               filter: "blur(60px)",
             }}
           />
+          {/* Orange glow right */}
           <div
-            className="absolute -bottom-[10%] left-[20%] w-200 h-100 rounded-[100%]"
+            className="absolute top-[20%] -right-[10%] w-[400px] h-[400px] rounded-full"
+            style={{
+              background:
+                "radial-gradient(ellipse, rgba(142,78,20,0.06) 0%, transparent 65%)",
+              filter: "blur(80px)",
+            }}
+          />
+          {/* Bottom glow */}
+          <div
+            className="absolute -bottom-[5%] left-[30%] w-[500px] h-[250px] rounded-[100%]"
             style={{
               background:
                 "radial-gradient(ellipse, rgba(45,106,79,0.07) 0%, transparent 70%)",
               filter: "blur(80px)",
             }}
           />
+          {/* Dot grid */}
           <div
             className="absolute inset-0"
             style={{
               backgroundImage:
                 "radial-gradient(circle, rgba(15,82,56,0.07) 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
+              backgroundSize: "28px 28px",
             }}
           />
+          {/* Diagonal lines */}
           <svg
             className="absolute inset-0 w-full h-full opacity-[0.025]"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <line
                 key={i}
-                x1={`${i * 15}%`}
+                x1={`${i * 12}%`}
                 y1="0"
-                x2={`${i * 15 + 30}%`}
+                x2={`${i * 12 + 25}%`}
                 y2="100%"
                 stroke="#0f5238"
                 strokeWidth="1"
@@ -696,14 +769,15 @@ export default function Landing() {
         </motion.div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-8 items-center">
             {/* Left copy */}
             <div className="flex flex-col items-start">
+              {/* Badge */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8"
                 style={{
                   backgroundColor: "rgba(15,82,56,0.07)",
                   border: "1px solid rgba(15,82,56,0.18)",
@@ -711,60 +785,54 @@ export default function Landing() {
                   fontFamily: "'Manrope',sans-serif",
                 }}
               >
-                <span className="relative flex h-2 w-2">
+                <span className="relative flex h-1.5 w-1.5">
                   <span
                     className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
                     style={{ backgroundColor: "#2d6a4f" }}
                   />
                   <span
-                    className="relative inline-flex rounded-full h-2 w-2"
+                    className="relative inline-flex rounded-full h-1.5 w-1.5"
                     style={{ backgroundColor: "#0f5238" }}
                   />
                 </span>
-                Powered by Google Vertex AI
+                Powered by Google Vertex AI + Gemini
               </motion.div>
 
+              {/* Headline */}
               <motion.h1
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 28 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  duration: 0.75,
+                  duration: 0.8,
                   delay: 0.1,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="mb-6 leading-[1.06]"
+                className="mb-6 leading-[1.05]"
                 style={{
                   fontFamily: "'Manrope',sans-serif",
                   fontWeight: 800,
-                  fontSize: "clamp(2.4rem, 5.5vw, 4rem)",
-                  letterSpacing: "-0.035em",
+                  fontSize: "clamp(2.6rem, 6vw, 4.8rem)",
+                  letterSpacing: "-0.04em",
                   color: "#1c1c18",
                 }}
               >
-                AI That Detects
+                Your AI Co-Pilot
                 <br />
-                Paddy Diseases{" "}
-                <span className="relative inline-block">
-                  <span
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #0f5238 0%, #2d6a4f 50%, #8e4e14 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    in Seconds.
-                  </span>
-                  <span
-                    className="absolute -bottom-1 left-0 right-0 h-0.75 rounded-full"
-                    style={{
-                      background: "linear-gradient(90deg, #0f5238, #8e4e14)",
-                    }}
-                  />
+                for{" "}
+                <span
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #0f5238 0%, #2d6a4f 50%, #8e4e14 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  Smarter Farming
                 </span>
               </motion.h1>
 
+              {/* Subtext */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -772,48 +840,48 @@ export default function Landing() {
                 className="text-lg leading-relaxed mb-10 max-w-lg"
                 style={{ color: "#404943" }}
               >
-                Upload a photo of your crop. Our enterprise-grade vision model
-                identifies diseases, pests, and nutrient deficiencies with 95%
-                accuracy — and generates a treatment plan instantly.
+                Diagnose crop diseases, forecast field weather, and get expert
+                recommendations — all from your phone. Built for real farmers,
+                powered by enterprise AI.
               </motion.p>
 
+              {/* CTAs */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.3 }}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-12"
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-10"
               >
                 <button
                   onClick={() => navigate("/login")}
-                  className="group flex items-center gap-2 px-7 py-4 rounded-full text-base font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  className="group flex items-center gap-2 px-7 py-3.5 rounded-full text-base font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer"
                   style={{
                     fontFamily: "'Manrope',sans-serif",
-                    backgroundColor: "#0f5238",
+                    background: "linear-gradient(135deg,#0f5238,#2d6a4f)",
                     color: "#fff",
-                    boxShadow: "0 6px 28px rgba(15,82,56,0.32)",
+                    boxShadow: "0 8px 28px rgba(15,82,56,0.3)",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.boxShadow =
-                      "0 8px 36px rgba(15,82,56,0.48)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.boxShadow =
-                      "0 6px 28px rgba(15,82,56,0.32)")
-                  }
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 12px 40px rgba(15,82,56,0.45)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 8px 28px rgba(15,82,56,0.3)";
+                  }}
                 >
-                  <span>Start Detection Now</span>
+                  Start for Free
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
 
                 <a
-                  target="_blank"
                   href="https://www.youtube.com/watch?v=b6Fg12rJNkY&list=LL&index=1"
-                  className="flex items-center gap-2 px-7 py-4 rounded-full text-base font-semibold transition-all hover:scale-105 active:scale-95"
+                  target="_blank"
+                  className="flex items-center gap-2 px-7 py-3.5 rounded-full text-base font-semibold transition-all hover:scale-105 active:scale-95 cursor-pointer"
                   style={{
                     fontFamily: "'Manrope',sans-serif",
                     color: "#0f5238",
                     border: "1.5px solid rgba(15,82,56,0.25)",
-                    backgroundColor: "transparent",
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -828,209 +896,136 @@ export default function Landing() {
                       "rgba(15,82,56,0.25)";
                   }}
                 >
-                  <Play className="w-4 h-4" /> View Demo
+                  <Play className="w-4 h-4" /> Watch Demo
                 </a>
               </motion.div>
 
+              {/* Trust indicators */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.55 }}
+                transition={{ delay: 0.5 }}
                 className="flex flex-wrap items-center gap-5"
               >
                 {[
-                  {
-                    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-                    text: "No credit card required",
-                  },
-                  {
-                    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-                    text: "Instant access",
-                  },
-                  {
-                    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-                    text: "AI-assisted farming insights",
-                  },
-                ].map((item, i) => (
+                  "No credit card required",
+                  "Instant access",
+                  "Works on any device",
+                ].map((t) => (
                   <div
-                    key={i}
+                    key={t}
                     className="flex items-center gap-1.5 text-sm"
                     style={{ color: "#707973" }}
                   >
-                    <span style={{ color: "#0f5238" }}>{item.icon}</span>
-                    {item.text}
+                    <CheckCircle2
+                      className="w-3.5 h-3.5"
+                      style={{ color: "#0f5238" }}
+                    />
+                    {t}
                   </div>
                 ))}
               </motion.div>
             </div>
 
-            {/* Right — scan card */}
-            <div className="flex justify-center lg:justify-end relative py-8 pr-8">
-              <AIScanCard />
+            {/* Right — chat mockup */}
+            <div className="flex justify-center lg:justify-end relative py-8 px-10 lg:px-8">
+              <HeroChatMockup />
             </div>
           </div>
         </div>
       </main>
 
-      {/* ── TECH TRUST BAR ── */}
-      <div className="overflow-hidden py-20 md:py-28" id="technology">
+      {/* ── TECH LOGOS BAR ── */}
+      <div
+        className="py-14 overflow-hidden"
+        id="technology"
+        style={{ borderTop: "1px solid rgba(191,201,193,0.35)" }}
+      >
         <p
-          className="text-xs font-semibold uppercase tracking-[0.2em] mb-8 text-center"
-          style={{ color: "#bfc9c1", fontFamily: "'Manrope',sans-serif" }}
+          className="text-xs font-semibold uppercase tracking-[0.22em] mb-8 text-center"
+          style={{
+            color: "#bfc9c1",
+            fontFamily: "'Manrope',sans-serif",
+          }}
         >
           Built on enterprise-grade infrastructure
         </p>
-
-        {/* Infinite carousel */}
         <div className="relative">
-          {/* Left fade */}
           <div
-            className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
+            className="absolute left-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
             style={{
-              background: "linear-gradient(90deg, #f6f3ed, transparent)",
+              background: "linear-gradient(90deg, #fcf9f3, transparent)",
             }}
           />
-          {/* Right fade */}
           <div
-            className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
+            className="absolute right-0 top-0 bottom-0 w-20 z-10 pointer-events-none"
             style={{
-              background: "linear-gradient(270deg, #f6f3ed, transparent)",
+              background: "linear-gradient(270deg, #fcf9f3, transparent)",
             }}
           />
-
           <motion.div
-            className="flex gap-12 items-center"
+            className="flex gap-8 items-center"
             animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 18, ease: "linear", repeat: Infinity }}
+            transition={{ duration: 20, ease: "linear", repeat: Infinity }}
             style={{ width: "max-content" }}
           >
-            {/* Duplicate the list twice for seamless loop */}
-            {[...Array(2)].map((_, setIdx) => (
-              <div key={setIdx} className="flex gap-12 items-center">
-                {[
-                  {
-                    name: "Google Cloud",
-                    icon: <CloudCog className="w-4 h-4" />,
-                  },
-                  { name: "Vertex AI", icon: <Cpu className="w-4 h-4" /> },
-                  { name: "Gemini", icon: <Brain className="w-4 h-4" /> },
-                  {
-                    name: "ExpressJS",
-                    icon: <SquareStack className="w-4 h-4" />,
-                  },
-                  { name: "React", icon: <Sprout className="w-4 h-4" /> },
-                  {
-                    name: "Google Cloud",
-                    icon: <CloudCog className="w-4 h-4" />,
-                  },
-                  { name: "Vertex AI", icon: <Cpu className="w-4 h-4" /> },
-                  { name: "Gemini", icon: <Brain className="w-4 h-4" /> },
-                  {
-                    name: "ExpressJS",
-                    icon: <SquareStack className="w-4 h-4" />,
-                  },
-                  { name: "React", icon: <Sprout className="w-4 h-4" /> },
-                ].map((t, i) => (
-                  <div
-                    key={`${setIdx}-${i}`}
-                    className="flex items-center gap-2.5 px-6 py-3 rounded-2xl shrink-0 transition-colors duration-200 cursor-default"
-                    style={{
-                      color: "#bfc9c1",
-                      border: "1px solid rgba(191,201,193,0.3)",
-                      backgroundColor: "rgba(252,249,243,0.6)",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.color = "#0f5238";
-                      (e.currentTarget as HTMLElement).style.borderColor =
-                        "rgba(15,82,56,0.2)";
-                      (e.currentTarget as HTMLElement).style.backgroundColor =
-                        "rgba(15,82,56,0.04)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.color = "#bfc9c1";
-                      (e.currentTarget as HTMLElement).style.borderColor =
-                        "rgba(191,201,193,0.3)";
-                      (e.currentTarget as HTMLElement).style.backgroundColor =
-                        "rgba(252,249,243,0.6)";
-                    }}
-                  >
-                    {t.icon}
-                    <span
-                      style={{
-                        fontFamily: "'Manrope',sans-serif",
-                        fontWeight: 700,
-                        fontSize: "0.9rem",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {t.name}
-                    </span>
-                  </div>
-                ))}
+            {techLogos.map((t, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl shrink-0 cursor-default transition-all"
+                style={{
+                  color: "#bfc9c1",
+                  border: "1px solid rgba(191,201,193,0.3)",
+                  backgroundColor: "rgba(252,249,243,0.6)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#0f5238";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "rgba(15,82,56,0.2)";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "rgba(15,82,56,0.04)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#bfc9c1";
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "rgba(191,201,193,0.3)";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "rgba(252,249,243,0.6)";
+                }}
+              >
+                {t.icon}
+                <span
+                  style={{
+                    fontFamily: "'Manrope',sans-serif",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.name}
+                </span>
               </div>
             ))}
           </motion.div>
         </div>
       </div>
 
-      {/* ── METRICS ── */}
-      <section className="py-20 md:py-28 relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 100%, rgba(15,82,56,0.04), transparent 70%)",
-          }}
-        />
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center text-sm font-bold uppercase tracking-widest mb-12"
-            style={{ color: "#8e4e14", fontFamily: "'Manrope',sans-serif" }}
-          >
-            Proven impact
-          </motion.p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <MetricCard
-              value={95}
-              suffix="%"
-              label="Disease detection accuracy"
-              delay={0}
-            />
-            <MetricCard
-              value={2}
-              suffix="<"
-              label="Seconds average inference time"
-              delay={0.1}
-            />
-            <MetricCard
-              value={100000}
-              suffix="+"
-              label="Training dataset images"
-              delay={0.2}
-            />
-          </div>
-        </div>
-      </section>
-
       {/* ── FEATURES ── */}
       <section
         id="features"
-        className="py-20 md:py-28"
+        className="py-24 md:py-32"
         style={{ backgroundColor: "#f6f3ed" }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            variants={fadeUp}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="text-center mb-16"
           >
             <p
-              className="text-xs font-bold uppercase tracking-widest mb-4"
+              className="text-xs font-bold uppercase tracking-[0.2em] mb-4"
               style={{ color: "#8e4e14", fontFamily: "'Manrope',sans-serif" }}
             >
               Capabilities
@@ -1040,23 +1035,20 @@ export default function Landing() {
               style={{
                 fontFamily: "'Manrope',sans-serif",
                 fontWeight: 800,
-                fontSize: "clamp(1.9rem,4vw,3rem)",
-                letterSpacing: "-0.028em",
+                fontSize: "clamp(2rem, 4.5vw, 3.2rem)",
+                letterSpacing: "-0.035em",
                 color: "#1c1c18",
               }}
             >
-              Powerful. Precise. Professional.
+              Built for every farmer.
+              <br />
+              <span style={{ color: "#707973" }}>
+                Powerful enough for enterprise.
+              </span>
             </h2>
-            <p
-              className="text-lg max-w-2xl mx-auto"
-              style={{ color: "#404943" }}
-            >
-              Every capability is purpose-built for the realities of field
-              agriculture.
-            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map((f, i) => (
               <motion.div
                 key={i}
@@ -1065,35 +1057,46 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{
                   duration: 0.55,
-                  delay: i * 0.07,
+                  delay: i * 0.08,
                   ease: "easeOut",
                 }}
-                whileHover={{ y: -5, boxShadow: `0 20px 48px ${f.color}16` }}
-                className="group relative rounded-3xl p-8 cursor-default transition-all duration-300"
+                whileHover={{
+                  y: -6,
+                  boxShadow: `0 20px 48px rgba(15,82,56,0.1)`,
+                }}
+                className="group relative rounded-3xl p-7 cursor-default transition-all duration-300"
                 style={{
                   backgroundColor: "#fcf9f3",
                   border: "1px solid #e5e2dc",
                 }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    `${f.color}30`;
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "#fff";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "#e5e2dc";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "#fcf9f3";
+                }}
               >
+                {/* Hover glow */}
                 <div
                   className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                   style={{
-                    border: `1px solid ${f.color}30`,
-                    background: `radial-gradient(ellipse at top left, ${f.color}06, transparent 70%)`,
+                    background: `radial-gradient(ellipse at top left, ${f.color}06, transparent 65%)`,
                   }}
                 />
                 <div
                   className="w-11 h-11 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
-                  style={{
-                    backgroundColor: `${f.color}10`,
-                    border: `1px solid ${f.color}20`,
-                    color: f.color,
-                  }}
+                  style={{ backgroundColor: f.bg, color: f.color }}
                 >
                   {f.icon}
                 </div>
                 <h3
-                  className="mb-3"
+                  className="mb-2"
                   style={{
                     fontFamily: "'Manrope',sans-serif",
                     fontWeight: 700,
@@ -1117,103 +1120,424 @@ export default function Landing() {
 
       {/* ── HOW IT WORKS ── */}
       <section
-        className="py-20 md:py-28 relative overflow-hidden"
         id="how-it-works"
+        className="py-24 md:py-32 overflow-hidden"
+        style={{ backgroundColor: "#fcf9f3" }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse at 50% 50%, rgba(15,82,56,0.03), transparent 70%)",
-          }}
-        />
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            {/* Left: copy */}
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <p
+                  className="text-xs font-bold uppercase tracking-[0.2em] mb-4"
+                  style={{
+                    color: "#8e4e14",
+                    fontFamily: "'Manrope',sans-serif",
+                  }}
+                >
+                  How It Works
+                </p>
+                <h2
+                  className="mb-6"
+                  style={{
+                    fontFamily: "'Manrope',sans-serif",
+                    fontWeight: 800,
+                    fontSize: "clamp(2rem, 4vw, 3rem)",
+                    letterSpacing: "-0.035em",
+                    color: "#1c1c18",
+                  }}
+                >
+                  From field to fix
+                  <br />
+                  in 3 steps.
+                </h2>
+                <p
+                  className="text-base leading-relaxed mb-10 max-w-md"
+                  style={{ color: "#404943" }}
+                >
+                  No agronomist on speed-dial. No guesswork. Just point, scan,
+                  and act — powered by models trained on 100,000+ field samples.
+                </p>
+
+                {[
+                  {
+                    step: "01",
+                    title: "Capture",
+                    desc: "Point your phone at any affected leaf. Our guided UI ensures optimal image quality even in harsh field conditions.",
+                  },
+                  {
+                    step: "02",
+                    title: "Analyse",
+                    desc: "Vertex AI runs multi-model ensemble inference — classifying disease, severity, and spread risk simultaneously.",
+                  },
+                  {
+                    step: "03",
+                    title: "Act",
+                    desc: "Receive a structured treatment plan with chemical recommendations, dosage, and a follow-up monitoring schedule.",
+                  },
+                ].map((s, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: i * 0.12 }}
+                    className="flex gap-5 mb-8 last:mb-0"
+                  >
+                    <div
+                      className="shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-bold"
+                      style={{
+                        backgroundColor: "rgba(15,82,56,0.08)",
+                        border: "1px solid rgba(15,82,56,0.15)",
+                        color: "#0f5238",
+                        fontFamily: "'Manrope',sans-serif",
+                      }}
+                    >
+                      {s.step}
+                    </div>
+                    <div>
+                      <p
+                        className="font-bold mb-1"
+                        style={{
+                          fontFamily: "'Manrope',sans-serif",
+                          color: "#1c1c18",
+                        }}
+                      >
+                        {s.title}
+                      </p>
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={{ color: "#404943" }}
+                      >
+                        {s.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Right: scan result card */}
+            <div className="flex justify-center lg:justify-end">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-sm"
+                style={{
+                  filter: "drop-shadow(0 32px 64px rgba(15,82,56,0.12))",
+                }}
+              >
+                <div
+                  className="rounded-3xl overflow-hidden"
+                  style={{
+                    background: "rgba(252,249,243,0.97)",
+                    border: "1px solid rgba(15,82,56,0.12)",
+                  }}
+                >
+                  {/* Scan image */}
+                  <div
+                    className="relative h-52 overflow-hidden"
+                    style={{
+                      background:
+                        "linear-gradient(160deg, #0f2d18 0%, #071a0d 100%)",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage:
+                          "repeating-linear-gradient(60deg, transparent, transparent 12px, rgba(168,231,197,0.05) 12px, rgba(168,231,197,0.05) 13px)",
+                      }}
+                    />
+                    {/* Disease bounding box */}
+                    <div
+                      className="absolute"
+                      style={{
+                        top: "18%",
+                        left: "22%",
+                        width: "56%",
+                        height: "55%",
+                        border: "1.5px solid rgba(255,171,105,0.85)",
+                        borderRadius: "8px",
+                        boxShadow:
+                          "0 0 20px rgba(142,78,20,0.3), inset 0 0 20px rgba(142,78,20,0.04)",
+                      }}
+                    />
+                    <div
+                      className="absolute px-2 py-1 rounded text-[10px] font-bold text-white"
+                      style={{
+                        top: "calc(18% - 22px)",
+                        left: "22%",
+                        backgroundColor: "rgba(142,78,20,0.9)",
+                        fontFamily: "'Manrope',sans-serif",
+                      }}
+                    >
+                      Brown Spot — 94.7%
+                    </div>
+                    {/* Scan line animation */}
+                    <motion.div
+                      className="absolute left-0 right-0 h-px"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, transparent, rgba(168,231,197,0.85), transparent)",
+                      }}
+                      animate={{ top: ["0%", "100%"] }}
+                      transition={{
+                        duration: 2.5,
+                        ease: "linear",
+                        repeat: Infinity,
+                      }}
+                    />
+                    <div
+                      className="absolute bottom-2 right-3 text-[9px] font-bold uppercase tracking-widest"
+                      style={{ color: "rgba(168,231,197,0.5)" }}
+                    >
+                      Scanning…
+                    </div>
+                  </div>
+
+                  {/* Result panel */}
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p
+                          className="font-bold text-base"
+                          style={{
+                            fontFamily: "'Manrope',sans-serif",
+                            color: "#1c1c18",
+                          }}
+                        >
+                          Brown Spot Disease
+                        </p>
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: "#707973" }}
+                        >
+                          Helminthosporium oryzae
+                        </p>
+                      </div>
+                      <div
+                        className="px-2.5 py-1 rounded-full text-[11px] font-bold"
+                        style={{
+                          background: "rgba(142,78,20,0.1)",
+                          border: "1px solid rgba(142,78,20,0.2)",
+                          color: "#8e4e14",
+                          fontFamily: "'Manrope',sans-serif",
+                        }}
+                      >
+                        High Risk
+                      </div>
+                    </div>
+                    {[
+                      { label: "Confidence", value: 94.7, color: "#0f5238" },
+                      { label: "Severity", value: 72, color: "#8e4e14" },
+                    ].map((bar) => (
+                      <div key={bar.label}>
+                        <div
+                          className="flex justify-between mb-1"
+                          style={{ fontSize: "0.7rem" }}
+                        >
+                          <span style={{ color: "#707973" }}>{bar.label}</span>
+                          <span style={{ fontWeight: 700, color: bar.color }}>
+                            {bar.value}%
+                          </span>
+                        </div>
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ background: "#e5e2dc" }}
+                        >
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: bar.color }}
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${bar.value}%` }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.8, delay: 0.3 }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      className="flex items-center gap-2 pt-2"
+                      style={{ borderTop: "1px solid #e5e2dc" }}
+                    >
+                      <CheckCircle2
+                        className="w-3.5 h-3.5 shrink-0"
+                        style={{ color: "#0f5238" }}
+                      />
+                      <p className="text-xs" style={{ color: "#404943" }}>
+                        Treatment plan ready ·{" "}
+                        <span style={{ color: "#0f5238", fontWeight: 700 }}>
+                          View recommendations →
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── METRICS ── */}
+      <section
+        className="py-20"
+        style={{
+          backgroundColor: "#f6f3ed",
+          borderTop: "1px solid rgba(191,201,193,0.4)",
+          borderBottom: "1px solid rgba(191,201,193,0.4)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center text-xs font-bold uppercase tracking-widest mb-2"
+            style={{ color: "#8e4e14", fontFamily: "'Manrope',sans-serif" }}
+          >
+            Proven impact
+          </motion.p>
+          <div className="grid grid-cols-2 md:grid-cols-4">
+            <MetricCard
+              value={95}
+              suffix="%"
+              label="Disease detection accuracy"
+              delay={0}
+            />
+            <MetricCard
+              value={2}
+              suffix="<"
+              label="Seconds average inference"
+              delay={0.1}
+            />
+            <MetricCard
+              value={40}
+              suffix="+"
+              label="Paddy diseases covered"
+              delay={0.2}
+            />
+            <MetricCard
+              value={100}
+              suffix="K+"
+              label="Training dataset images"
+              delay={0.3}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHY PADIPRO ── */}
+      <section
+        className="py-24 md:py-32"
+        style={{ backgroundColor: "#fcf9f3" }}
+      >
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16"
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center mb-16"
           >
             <p
-              className="text-xs font-bold uppercase tracking-widest mb-4"
+              className="text-xs font-bold uppercase tracking-[0.2em] mb-4"
               style={{ color: "#8e4e14", fontFamily: "'Manrope',sans-serif" }}
             >
-              Workflow
+              Why PadiPro
             </p>
             <h2
               style={{
                 fontFamily: "'Manrope',sans-serif",
                 fontWeight: 800,
-                fontSize: "clamp(1.9rem,4vw,3rem)",
-                letterSpacing: "-0.028em",
+                fontSize: "clamp(2rem, 4.5vw, 3.2rem)",
+                letterSpacing: "-0.035em",
                 color: "#1c1c18",
               }}
             >
-              From field to fix in 3 steps.
+              Results that matter
+              <br />
+              <span style={{ color: "#707973" }}>
+                to the people who grow our food.
+              </span>
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            <div
-              className="hidden md:block absolute top-14 left-[18%] right-[18%] h-px"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, #bfc9c1 20%, #bfc9c1 80%, transparent)",
-              }}
-            />
-
-            {steps.map((s, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {benefits.map((b, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.55, delay: i * 0.15 }}
-                whileHover={{ y: -4 }}
-                className="group"
+                transition={{ duration: 0.55, delay: i * 0.1 }}
+                whileHover={{
+                  y: -5,
+                  boxShadow: "0 16px 48px rgba(15,82,56,0.08)",
+                }}
+                className="group relative rounded-3xl p-8 cursor-default transition-all"
+                style={{
+                  backgroundColor: "#fcf9f3",
+                  border: "1px solid #e5e2dc",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "rgba(15,82,56,0.2)";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "#fff";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor =
+                    "#e5e2dc";
+                  (e.currentTarget as HTMLElement).style.backgroundColor =
+                    "#fcf9f3";
+                }}
               >
-                <div
-                  className="w-28 h-28 rounded-full mx-auto mb-8 flex items-center justify-center relative z-10 transition-all duration-300 group-hover:scale-105"
-                  style={{
-                    backgroundColor: "#fcf9f3",
-                    border: "1.5px solid #bfc9c1",
-                    boxShadow: "0 4px 24px rgba(15,82,56,0.08)",
-                  }}
-                >
+                <div className="flex items-start gap-5">
                   <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: "rgba(15,82,56,0.07)" }}
+                    className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
+                    style={{
+                      backgroundColor: "rgba(15,82,56,0.08)",
+                      color: "#0f5238",
+                    }}
                   >
-                    {s.icon}
+                    {b.icon}
                   </div>
-                </div>
-                <div className="text-center">
-                  <p
-                    className="text-xs font-bold uppercase tracking-[0.18em] mb-2"
-                    style={{
-                      color: "#8e4e14",
-                      fontFamily: "'Manrope',sans-serif",
-                    }}
-                  >
-                    {s.step}
-                  </p>
-                  <h3
-                    className="mb-3"
-                    style={{
-                      fontFamily: "'Manrope',sans-serif",
-                      fontWeight: 700,
-                      fontSize: "1.1rem",
-                      color: "#1c1c18",
-                    }}
-                  >
-                    {s.title}
-                  </h3>
-                  <p
-                    className="text-sm leading-relaxed max-w-65 mx-auto"
-                    style={{ color: "#404943" }}
-                  >
-                    {s.desc}
-                  </p>
+                  <div>
+                    <div
+                      className="text-sm font-bold mb-1"
+                      style={{
+                        color: "#0f5238",
+                        fontFamily: "'Manrope',sans-serif",
+                      }}
+                    >
+                      {b.metric}
+                    </div>
+                    <h3
+                      className="font-bold text-lg mb-2"
+                      style={{
+                        fontFamily: "'Manrope',sans-serif",
+                        color: "#1c1c18",
+                      }}
+                    >
+                      {b.title}
+                    </h3>
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "#404943" }}
+                    >
+                      {b.desc}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -1221,179 +1545,273 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── ALERT BANNER ── */}
-      <section className="py-12" style={{ backgroundColor: "#f6f3ed" }}>
-        <div className="max-w-5xl mx-auto px-6">
+      {/* ── WEATHER PREVIEW STRIP ── */}
+      <section
+        className="py-20"
+        style={{
+          backgroundColor: "#f6f3ed",
+          borderTop: "1px solid rgba(191,201,193,0.35)",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="flex flex-col md:flex-row items-center gap-6 rounded-3xl px-8 py-7"
+            className="flex flex-col md:flex-row items-center gap-10 rounded-[2rem] p-10 md:p-14 overflow-hidden relative"
             style={{
-              background: "rgba(142,78,20,0.05)",
-              border: "1px solid rgba(142,78,20,0.15)",
+              background: "rgba(15,82,56,0.04)",
+              border: "1px solid rgba(15,82,56,0.1)",
             }}
           >
+            {/* Glow */}
             <div
-              className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: "rgba(142,78,20,0.12)" }}
-            >
-              <AlertTriangle className="w-6 h-6" style={{ color: "#8e4e14" }} />
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <p
-                className="font-bold mb-1"
-                style={{ fontFamily: "'Manrope',sans-serif", color: "#1c1c18" }}
-              >
-                Early detection saves up to 40% of crop yield
-              </p>
-              <p className="text-sm" style={{ color: "#707973" }}>
-                Most disease damage is preventable when caught in the first 48
-                hours. PadiPro gives you the edge.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/login")}
-              className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm transition-all hover:scale-105 cursor-pointer"
+              className="absolute -top-20 -left-20 w-64 h-64 rounded-full pointer-events-none"
               style={{
-                fontFamily: "'Manrope',sans-serif",
-                backgroundColor: "#8e4e14",
-                color: "#fff",
-                boxShadow: "0 4px 16px rgba(142,78,20,0.28)",
+                background:
+                  "radial-gradient(ellipse, rgba(15,82,56,0.08), transparent 70%)",
+                filter: "blur(40px)",
               }}
-            >
-              Try it now <ArrowRight className="w-4 h-4" />
-            </button>
+            />
+
+            <div className="relative z-10 flex-1 text-center md:text-left">
+              <p
+                className="text-xs font-bold uppercase tracking-[0.2em] mb-3"
+                style={{ color: "#8e4e14", fontFamily: "'Manrope',sans-serif" }}
+              >
+                Weather Intelligence
+              </p>
+              <h3
+                className="mb-3"
+                style={{
+                  fontFamily: "'Manrope',sans-serif",
+                  fontWeight: 800,
+                  fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)",
+                  letterSpacing: "-0.03em",
+                  color: "#1c1c18",
+                }}
+              >
+                Know before the storm hits.
+              </h3>
+              <p className="text-base max-w-md" style={{ color: "#404943" }}>
+                Hyper-local agricultural forecasts with crop-specific alerts.
+                Optimal spray windows. Irrigation triggers. All automated.
+              </p>
+            </div>
+
+            {/* Weather mini-cards */}
+            <div className="relative z-10 flex gap-3">
+              {[
+                {
+                  icon: (
+                    <Sun className="w-6 h-6" style={{ color: "#8e4e14" }} />
+                  ),
+                  day: "Today",
+                  temp: "31°",
+                  desc: "Sunny",
+                },
+                {
+                  icon: (
+                    <Cloud className="w-6 h-6" style={{ color: "#404943" }} />
+                  ),
+                  day: "Tomorrow",
+                  temp: "28°",
+                  desc: "Overcast",
+                },
+                {
+                  icon: (
+                    <CloudRain
+                      className="w-6 h-6"
+                      style={{ color: "#0369a1" }}
+                    />
+                  ),
+                  day: "Wed",
+                  temp: "24°",
+                  desc: "Rain",
+                },
+              ].map((w, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 + i * 0.08 }}
+                  className="flex flex-col items-center gap-2 px-4 py-5 rounded-2xl"
+                  style={{
+                    background: "rgba(252,249,243,0.9)",
+                    border: "1px solid rgba(15,82,56,0.1)",
+                    minWidth: "80px",
+                  }}
+                >
+                  {w.icon}
+                  <div
+                    className="font-bold text-xl"
+                    style={{
+                      fontFamily: "'Manrope',sans-serif",
+                      color: "#1c1c18",
+                    }}
+                  >
+                    {w.temp}
+                  </div>
+                  <div
+                    className="text-[10px] font-semibold text-center"
+                    style={{ color: "#707973", lineHeight: 1.3 }}
+                  >
+                    {w.day}
+                    <br />
+                    {w.desc}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-24 md:py-32">
-        <div className="max-w-5xl mx-auto px-6">
+      <section
+        className="py-24 md:py-36"
+        style={{ backgroundColor: "#fcf9f3" }}
+      >
+        <div className="max-w-4xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 28 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="relative rounded-[2.5rem] overflow-hidden p-12 md:p-24 text-center"
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="relative rounded-[2.5rem] overflow-hidden px-10 py-20 md:px-20 md:py-24 text-center"
             style={{
               background:
                 "linear-gradient(135deg, #0a3d28 0%, #0f5238 45%, #1a6644 100%)",
               boxShadow: "0 32px 80px rgba(15,82,56,0.28)",
             }}
           >
+            {/* Grid overlay */}
             <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px"
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, rgba(168,231,197,0.08) 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
+              }}
+            />
+            {/* Top glow line */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px pointer-events-none"
               style={{
                 background:
                   "linear-gradient(90deg, transparent, rgba(168,231,197,0.6), transparent)",
               }}
             />
             <div
-              className="absolute -top-32 left-1/2 -translate-x-1/2 w-125 h-125 rounded-full pointer-events-none"
+              className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full pointer-events-none"
               style={{
                 background:
                   "radial-gradient(ellipse, rgba(168,231,197,0.12) 0%, transparent 65%)",
-              }}
-            />
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle, rgba(168,231,197,0.08) 1px, transparent 1px)",
-                backgroundSize: "28px 28px",
+                filter: "blur(20px)",
               }}
             />
 
             <div className="relative z-10">
-              <p
-                className="text-xs font-bold uppercase tracking-widest mb-6"
+              <motion.div
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-8 mx-auto"
                 style={{
-                  color: "rgba(168,231,197,0.6)",
-                  fontFamily: "'Manrope',sans-serif",
+                  background: "rgba(168,231,197,0.2)",
+                  border: "1px solid rgba(168,231,197,0.3)",
+                  boxShadow: "0 0 32px rgba(168,231,197,0.15)",
                 }}
               >
-                Start today
-              </p>
+                <Leaf className="w-7 h-7 text-white" />
+              </motion.div>
+
               <h2
-                className="mb-6"
+                className="mb-5"
                 style={{
                   fontFamily: "'Manrope',sans-serif",
                   fontWeight: 800,
-                  fontSize: "clamp(2rem,5vw,3.6rem)",
-                  letterSpacing: "-0.032em",
+                  fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                  letterSpacing: "-0.035em",
                   color: "#fff",
                 }}
               >
-                Ready to protect your harvest?
+                Ready to protect
+                <br />
+                your harvest?
               </h2>
+
               <p
-                className="text-lg mb-12 max-w-xl mx-auto"
+                className="text-lg mb-12 max-w-lg mx-auto"
                 style={{ color: "rgba(168,231,197,0.75)" }}
               >
-                Join the farmers and agronomists using AI to catch diseases
-                early, reduce chemical waste, and maximise yield season after
-                season.
+                Join forward-thinking farmers using AI to catch diseases early,
+                cut chemical waste, and maximise yield every season.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
                   onClick={() => navigate("/login")}
-                  className="group flex items-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all hover:scale-105 active:scale-95"
+                  className="group flex items-center gap-2 px-9 py-4 rounded-full font-bold text-base transition-all hover:scale-105 active:scale-95 cursor-pointer"
                   style={{
                     fontFamily: "'Manrope',sans-serif",
                     backgroundColor: "#fcf9f3",
                     color: "#0f5238",
                     boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.boxShadow =
-                      "0 8px 36px rgba(0,0,0,0.28)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.boxShadow =
-                      "0 4px 24px rgba(0,0,0,0.18)")
-                  }
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 8px 36px rgba(0,0,0,0.28)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow =
+                      "0 4px 24px rgba(0,0,0,0.18)";
+                  }}
                 >
-                  Start Detection Now
+                  Start for Free
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
 
-                <button
-                  className="flex items-center gap-2 px-8 py-4 rounded-full font-semibold text-base transition-all hover:scale-105"
+                <a
+                  href="https://www.youtube.com/watch?v=b6Fg12rJNkY&list=LL&index=1"
+                  target="_blank"
+                  className="flex items-center gap-2 px-9 py-4 rounded-full font-semibold text-base transition-all hover:scale-105"
                   style={{
                     fontFamily: "'Manrope',sans-serif",
                     color: "rgba(168,231,197,0.9)",
                     border: "1.5px solid rgba(168,231,197,0.25)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      "rgba(168,231,197,0.5)";
                     (e.currentTarget as HTMLElement).style.backgroundColor =
                       "rgba(168,231,197,0.06)";
+                    (e.currentTarget as HTMLElement).style.borderColor =
+                      "rgba(168,231,197,0.5)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor =
-                      "rgba(168,231,197,0.25)";
                     (e.currentTarget as HTMLElement).style.backgroundColor =
                       "transparent";
+                    (e.currentTarget as HTMLElement).style.borderColor =
+                      "rgba(168,231,197,0.25)";
                   }}
                 >
-                  <Play className="w-4 h-4" /> View Demo
-                </button>
+                  <Play className="w-4 h-4" /> Watch Demo
+                </a>
               </div>
 
               <div
-                className="mt-10 flex flex-wrap items-center justify-center gap-6"
-                style={{ color: "rgba(168,231,197,0.5)", fontSize: "0.8rem" }}
+                className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs"
+                style={{ color: "rgba(168,231,197,0.5)" }}
               >
                 {[
                   "No credit card required",
                   "Instant access",
-                  "AI-assisted farming insights",
+                  "Works on any device",
                 ].map((t) => (
-                  <div key={t} className="flex items-center gap-2">
+                  <div key={t} className="flex items-center gap-1.5">
                     <CheckCircle2
                       className="w-3.5 h-3.5"
                       style={{ color: "rgba(168,231,197,0.6)" }}
@@ -1409,8 +1827,11 @@ export default function Landing() {
 
       {/* ── FOOTER ── */}
       <footer
-        className="pt-12 pb-8"
-        style={{ borderTop: "1px solid #e5e2dc", backgroundColor: "#f0eee8" }}
+        className="py-10"
+        style={{
+          borderTop: "1px solid #e5e2dc",
+          backgroundColor: "#f0eee8",
+        }}
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
@@ -1427,7 +1848,7 @@ export default function Landing() {
                 style={{
                   fontFamily: "'Manrope',sans-serif",
                   fontWeight: 800,
-                  fontSize: "1.05rem",
+                  fontSize: "1rem",
                   letterSpacing: "-0.02em",
                   color: "#0f5238",
                 }}
@@ -1440,13 +1861,14 @@ export default function Landing() {
                 <a
                   key={l}
                   href="#"
+                  className="transition-colors"
                   style={{ color: "#707973" }}
-                  onMouseEnter={(e) =>
-                    ((e.target as HTMLElement).style.color = "#0f5238")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.target as HTMLElement).style.color = "#707973")
-                  }
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = "#0f5238";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = "#707973";
+                  }}
                 >
                   {l}
                 </a>
@@ -1458,7 +1880,7 @@ export default function Landing() {
             style={{ color: "#bfc9c1" }}
           >
             <p>© {new Date().getFullYear()} PadiPro AI. All rights reserved.</p>
-            <p>Built for modern agriculture.</p>
+            <p>Cultivating precision agriculture with AI.</p>
           </div>
         </div>
       </footer>

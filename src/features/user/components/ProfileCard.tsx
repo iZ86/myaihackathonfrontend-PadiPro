@@ -71,22 +71,32 @@ export default function ProfileCard() {
   return (
     <>
       {/* Hero Profile Section */}
-      <section className="mb-12 text-left mt-4">
-        <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary font-bold mb-2 block">
-          {t.profile.lead}
-        </span>
-        <h1 className="text-4xl font-extrabold text-on-surface mb-2 font-headline">
-          {user?.name || "PadiPro User"}
-        </h1>
-        <p className="text-on-surface-variant font-body">
-          {t.profile.managing} • {t.profile.member}
-        </p>
+      <section className="mb-10 mt-4 flex items-center gap-5">
+        <div className="w-20 h-20 rounded-3xl hero-gradient flex items-center justify-center text-white text-3xl font-extrabold font-headline shadow-lg shadow-primary/20 shrink-0 select-none">
+          {(user?.name || "P")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2)}
+        </div>
+        <div>
+          <span className="font-label uppercase tracking-[0.2em] text-[10px] text-primary font-bold mb-1 block">
+            {t.profile.lead}
+          </span>
+          <h1 className="text-3xl font-extrabold text-on-surface mb-1 font-headline leading-tight">
+            {user?.name || "PadiPro User"}
+          </h1>
+          <p className="text-on-surface-variant font-body text-sm">
+            {t.profile.member}
+          </p>
+        </div>
       </section>
 
       {/* Location Permission Status */}
       <motion.div
         whileHover={{ y: -4 }}
-        className={`mb-8 rounded-xl p-6 transition-all border ${
+        className={`mb-8 rounded-3xl p-6 transition-all border ${
           hasLocationPermission
             ? "bg-primary-container/20 border-primary/20"
             : "bg-error-container/20 border-error/20"
@@ -145,7 +155,7 @@ export default function ProfileCard() {
         {/* Account Settings Card */}
         <motion.div
           whileHover={{ y: -4 }}
-          className="md:col-span-2 bg-surface-container-low rounded-xl p-6 transition-all"
+          className="md:col-span-2 bg-surface-container-low rounded-3xl p-6 transition-all"
         >
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
@@ -165,7 +175,7 @@ export default function ProfileCard() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container hover:bg-surface-container-low transition-colors group"
+                className="flex justify-between items-center p-4 bg-white rounded-2xl border border-surface-container hover:bg-surface-container-low transition-colors group"
               >
                 <div className="grow mr-2">
                   <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
@@ -178,7 +188,7 @@ export default function ProfileCard() {
             ))}
 
             {/* Language Switcher in Bento List */}
-            <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-surface-container">
+            <div className="flex justify-between items-center p-4 bg-white rounded-2xl border border-surface-container">
               <div className="grow">
                 <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
                   {t.profile.language}
@@ -264,7 +274,7 @@ export default function ProfileCard() {
       {/* Logout Action */}
       <button
         onClick={handleLogout}
-        className="w-full mt-8 flex items-center justify-center gap-3 py-4 bg-surface-container-high text-error font-bold rounded-xl active:scale-[0.98] transition-all hover:bg-error-container cursor-pointer"
+        className="w-full mt-8 flex items-center justify-center gap-3 py-4 bg-surface-container-high text-error font-bold rounded-2xl active:scale-[0.98] transition-all hover:bg-error-container cursor-pointer"
       >
         <LogOut className="w-5 h-5" />
         {t.auth.logout}

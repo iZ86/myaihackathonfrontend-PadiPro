@@ -215,10 +215,10 @@ export default function HistoryCard() {
 
       <section className="grid grid-cols-2 gap-4 mb-12">
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="bg-surface-container-low p-6 rounded-xl flex flex-col justify-between"
+          whileHover={{ y: -3 }}
+          className="bg-surface-container-low p-6 rounded-3xl flex flex-col justify-between transition-all"
         >
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm">
+          <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center mb-4 shadow-sm border border-surface-container">
             <BarChart3 className="w-5 h-5 text-primary" />
           </div>
           <div>
@@ -231,8 +231,8 @@ export default function HistoryCard() {
           </div>
         </motion.div>
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="hero-gradient p-6 rounded-xl flex flex-col justify-between text-on-primary"
+          whileHover={{ y: -3 }}
+          className="hero-gradient p-6 rounded-3xl flex flex-col justify-between text-on-primary transition-all"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-4">
             <Verified className="w-5 h-5 text-white" />
@@ -325,11 +325,19 @@ export default function HistoryCard() {
           </motion.div>
         ))}
         {filteredItems.length === 0 && (
-          <div className="py-10 text-center">
-            <p className="text-on-surface-variant text-sm font-medium">
-              {t.history.noRecords}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="py-16 text-center"
+          >
+            <div className="w-20 h-20 rounded-3xl bg-surface-container mx-auto mb-5 flex items-center justify-center border border-surface-container-high">
+              <BarChart3 className="w-9 h-9 text-outline" />
+            </div>
+            <p className="font-headline font-bold text-on-surface mb-1">
+              No records found
             </p>
-          </div>
+            <p className="text-on-surface-variant text-sm">{t.history.noRecords}</p>
+          </motion.div>
         )}
       </div>
     </>

@@ -15,6 +15,8 @@ import {
   Mic,
   Square,
   Trash2,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
@@ -40,7 +42,6 @@ export default function ChatArea() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [media, setMedia] = useState<MediaAttachment | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -132,11 +133,8 @@ export default function ChatArea() {
       };
 
       mediaRecorder.onstop = () => {
-        const generatedBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const audioUrl = URL.createObjectURL(generatedBlob);
-        setAudioURL(audioUrl);
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioURL(URL.createObjectURL(blob));
       };
 
       mediaRecorder.start();
@@ -184,64 +182,84 @@ export default function ChatArea() {
 
   const handleSend = async (text: string = input) => {
     const finalInput = text.trim();
-    if ((!finalInput && !media && !audioURL) || isTyping || isUploading) return;
+    if ((!finalInput && !media && !audioURL) || isTyping) return;
 
-    let messageType: Message["type"] = "text";
-    let mediaUrlValue: string | undefined = undefined;
-    let contentValue = finalInput;
+    const messageId = crypto.randomUUID();
+    const timestamp = new Date();
 
-    const mobileNo = user?.mobile_no || "unknown";
+    // Determine type and initial content (blob URL for media, text for text)
+    let messageType: Message["type"];
+    let initialContent: string;
 
-    if (media || audioURL) {
-      setIsUploading(true);
-      try {
-        let fileToUpload: File;
-        
-        if (media) {
-          fileToUpload = media.file;
-          messageType = media.type;
-        } else {
-          const generatedBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-          fileToUpload = new File([generatedBlob], "audio_message.webm", { type: "audio/webm" });
-          messageType = "audio";
-          contentValue = contentValue || "Voice message";
-        }
-
-        mediaUrlValue = await uploadChatFile(fileToUpload);
-      } catch (error) {
-        console.error("Upload failed:", error);
-        alert("Failed to upload media. Please try again.");
-        setIsUploading(false);
-        return;
-      }
-      setIsUploading(false);
+    if (media) {
+      messageType = media.type;
+      initialContent = media.previewUrl; // blob URL — shown instantly
+    } else if (audioURL) {
+      messageType = "audio";
+      initialContent = audioURL; // blob URL — shown instantly
+    } else {
+      messageType = "text";
+      initialContent = finalInput;
     }
 
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
+    // 1. Push optimistic message into UI immediately — no waiting
+    const optimisticMessage: Message = {
+      id: messageId,
       role: "user",
-      content: contentValue,
       type: messageType,
-      mediaUrl: mediaUrlValue,
-      mediaType:
-        messageType === "text"
-          ? undefined
-          : (messageType as Message["mediaType"]),
-      timestamp: new Date(),
+      content: initialContent,
+      status: messageType !== "text" ? "sending" : "sent",
+      timestamp,
     };
+    setMessages((prev) => [...prev, optimisticMessage]);
 
-    setMessages((prev) => [...prev, userMessage]);
+    // 2. Clear inputs right away
     setInput("");
     const currentMedia = media;
     const currentAudio = audioURL;
+    const currentAudioChunks = [...audioChunksRef.current];
     setMedia(null);
-    // Do NOT revoke audioURL here — the message still references it
     setAudioURL(null);
-    setIsTyping(true);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    // Simulate AI response
+    // 3. Background: upload file → replace blob URL with final URL
+    if (currentMedia || currentAudio) {
+      (async () => {
+        try {
+          let fileToUpload: File;
+          if (currentMedia) {
+            fileToUpload = currentMedia.file;
+          } else {
+            const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
+            fileToUpload = new File([blob], "audio_message.webm", {
+              type: "audio/webm",
+            });
+          }
+
+          const finalUrl = await uploadChatFile(fileToUpload);
+
+          // Swap blob URL → final URL, mark sent
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, content: finalUrl, status: "sent" }
+                : msg,
+            ),
+          );
+        } catch {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId ? { ...msg, status: "failed" } : msg,
+            ),
+          );
+        }
+      })();
+    }
+
+    // 4. Simulate AI response
+    setIsTyping(true);
     setTimeout(() => {
-      let aiResponse = `I've received your request about "${userMessage.content || "the file"}". As PaddyAI, I'm analyzing the field data...`;
+      let aiResponse = `I've received your request about "${finalInput || "the file"}". As PaddyAI, I'm analyzing the field data...`;
 
       if (currentMedia) {
         aiResponse =
@@ -256,7 +274,9 @@ export default function ChatArea() {
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
+        type: "text",
         content: aiResponse,
+        status: "sent",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
@@ -314,7 +334,7 @@ export default function ChatArea() {
         ref={scrollRef}
         className="grow overflow-y-auto no-scrollbar scroll-smooth"
       >
-        <div className="max-w-3xl mx-auto w-full px-4 pt-4 pb-48">
+        <div className="max-w-3xl mx-auto w-full px-4 pt-4 pb-56 md:pb-48">
           <AnimatePresence initial={false}>
             {messages.length === 0 ? (
               <motion.div
@@ -386,60 +406,75 @@ export default function ChatArea() {
                         className={`flex flex-col gap-2 max-w-[80%] ${isUser ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`px-5 py-4 rounded-3xl shadow-sm text-lg leading-relaxed ${
+                          className={`px-5 py-4 rounded-3xl shadow-sm text-lg leading-relaxed relative ${
                             isUser
                               ? "bg-primary text-on-primary rounded-tr-none"
                               : "bg-white text-on-surface border border-surface-container rounded-tl-none"
-                          }`}
+                          } ${msg.status === "sending" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error" : ""}`}
                         >
-                          {msg.mediaUrl && msg.mediaType !== "audio" && (
+                          {/* Image */}
+                          {msg.type === "image" && (
                             <div
                               className="mb-4 rounded-2xl overflow-hidden shadow-inner border border-surface-container group relative cursor-zoom-in"
-                              onClick={() =>
-                                msg.mediaType === "image" &&
-                                setLightboxSrc(msg.mediaUrl!)
-                              }
+                              onClick={() => setLightboxSrc(msg.content)}
                             >
-                              {msg.mediaType === "image" ? (
-                                <img
-                                  src={msg.mediaUrl}
-                                  className="w-full max-h-80 object-cover"
-                                />
-                              ) : (
-                                <video
-                                  src={msg.mediaUrl}
-                                  controls
-                                  className="w-full max-h-80"
-                                />
-                              )}
-                            </div>
-                          )}
-                          {msg.mediaUrl && msg.mediaType === "audio" && (
-                            <div
-                              className={
-                                msg.content && msg.content !== "Voice message"
-                                  ? "mb-3"
-                                  : ""
-                              }
-                            >
-                              <AudioPlayer
-                                id={msg.id}
-                                activeAudioId={activeAudioId}
-                                src={msg.mediaUrl}
-                                variant={isUser ? "user" : "assistant"}
-                                onPlay={setActiveAudioId}
+                              <img
+                                src={msg.content}
+                                className="w-full max-h-80 object-cover"
                               />
                             </div>
                           )}
-                          {msg.content && msg.content !== "Voice message" && (
+
+                          {/* Video */}
+                          {msg.type === "video" && (
+                            <div className="mb-4 rounded-2xl overflow-hidden shadow-inner border border-surface-container">
+                              <video
+                                src={msg.content}
+                                controls
+                                className="w-full max-h-80"
+                              />
+                            </div>
+                          )}
+
+                          {/* Audio */}
+                          {msg.type === "audio" && (
+                            <AudioPlayer
+                              id={msg.id}
+                              activeAudioId={activeAudioId}
+                              src={msg.content}
+                              variant={isUser ? "user" : "assistant"}
+                              onPlay={setActiveAudioId}
+                            />
+                          )}
+
+                          {/* Text */}
+                          {msg.type === "text" && (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           )}
                         </div>
-                        <span className="text-[10px] font-bold text-on-surface-variant/40 px-2 uppercase tracking-widest">
+                        <span
+                          className={`text-[10px] font-bold px-2 uppercase tracking-widest flex items-center gap-1.5 ${
+                            msg.status === "failed"
+                              ? "text-error"
+                              : "text-on-surface-variant/40"
+                          }`}
+                        >
                           {msg.timestamp.toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
+                          {isUser && msg.status === "sending" && (
+                            <Loader2
+                              size={10}
+                              className="animate-spin text-primary"
+                            />
+                          )}
+                          {isUser && msg.status === "failed" && (
+                            <AlertCircle size={10} />
+                          )}
+                          {isUser && msg.status === "sent" && (
+                            <Check size={10} className="text-primary-fixed" />
+                          )}
                         </span>
                       </div>
                     </motion.div>
@@ -477,8 +512,8 @@ export default function ChatArea() {
         </div>
       </div>
 
-      {/* Fixed Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-white/70 backdrop-blur-xl border-t border-surface-container/50 z-50">
+      {/* Fixed Input Area — sits above mobile bottom nav */}
+      <div className="fixed bottom-[88px] md:bottom-0 left-0 right-0 p-4 md:p-6 bg-white/70 backdrop-blur-xl border-t border-surface-container/50 z-40">
         <div className="max-w-3xl mx-auto w-full relative">
           {/* Media Preview Above Input */}
           <AnimatePresence>
@@ -618,9 +653,9 @@ export default function ChatArea() {
                   <button
                     type="button"
                     onClick={startRecording}
-                    disabled={isTyping || isUploading}
+                    disabled={isTyping}
                     className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      isTyping || isUploading
+                      isTyping
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
                         : "text-on-surface-variant hover:text-primary hover:bg-primary/5 active:scale-95"
                     }`}
@@ -631,15 +666,15 @@ export default function ChatArea() {
                   <button
                     type="submit"
                     disabled={
-                      (!input.trim() && !media && !audioURL) || isTyping || isUploading
+                      (!input.trim() && !media && !audioURL) || isTyping
                     }
                     className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                      (!input.trim() && !media && !audioURL) || isTyping || isUploading
+                      (!input.trim() && !media && !audioURL) || isTyping
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
                         : "bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 active:scale-95"
                     }`}
                   >
-                    {isTyping || isUploading ? (
+                    {isTyping ? (
                       <Loader2 size={24} className="animate-spin" />
                     ) : (
                       <Send size={24} />
