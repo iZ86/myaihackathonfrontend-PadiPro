@@ -23,8 +23,6 @@ import {
   Shield,
   Camera,
   Sprout,
-  Droplets,
-  Wind,
   BarChart3,
   Bot,
   Sparkles,
@@ -149,7 +147,7 @@ function HeroChatMockup() {
         </div>
 
         {/* Messages area */}
-        <div className="px-4 py-4 space-y-4 min-h-[260px]">
+        <div className="px-4 py-4 space-y-4 min-h-65">
           {/* User message */}
           <AnimatePresence>
             {phase >= 1 && (
@@ -715,7 +713,7 @@ export default function Landing() {
         >
           {/* Green glow top-left */}
           <div
-            className="absolute -top-[10%] -left-[5%] w-[600px] h-[600px] rounded-full"
+            className="absolute -top-[10%] -left-[5%] w-150 h-150 rounded-full"
             style={{
               background:
                 "radial-gradient(ellipse, rgba(15,82,56,0.1) 0%, transparent 65%)",
@@ -724,7 +722,7 @@ export default function Landing() {
           />
           {/* Orange glow right */}
           <div
-            className="absolute top-[20%] -right-[10%] w-[400px] h-[400px] rounded-full"
+            className="absolute top-[20%] -right-[10%] w-100 h-100 rounded-full"
             style={{
               background:
                 "radial-gradient(ellipse, rgba(142,78,20,0.06) 0%, transparent 65%)",
@@ -733,7 +731,7 @@ export default function Landing() {
           />
           {/* Bottom glow */}
           <div
-            className="absolute -bottom-[5%] left-[30%] w-[500px] h-[250px] rounded-[100%]"
+            className="absolute -bottom-[5%] left-[30%] w-125 h-62.5 rounded-[100%]"
             style={{
               background:
                 "radial-gradient(ellipse, rgba(45,106,79,0.07) 0%, transparent 70%)",
@@ -1558,7 +1556,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="flex flex-col md:flex-row items-center gap-10 rounded-[2rem] p-10 md:p-14 overflow-hidden relative"
+            className="flex flex-col md:flex-row items-center gap-10 rounded-4xl p-10 md:p-14 overflow-hidden relative"
             style={{
               background: "rgba(15,82,56,0.04)",
               border: "1px solid rgba(15,82,56,0.1)",

@@ -17,6 +17,7 @@ import {
   Trash2,
   AlertCircle,
   Check,
+  Maximize2,
 } from "lucide-react";
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
@@ -187,22 +188,21 @@ export default function ChatArea() {
     const messageId = crypto.randomUUID();
     const timestamp = new Date();
 
-    // Determine type and initial content (blob URL for media, text for text)
     let messageType: Message["type"];
     let initialContent: string;
 
     if (media) {
       messageType = media.type;
-      initialContent = media.previewUrl; // blob URL — shown instantly
+      initialContent = media.previewUrl;
     } else if (audioURL) {
       messageType = "audio";
-      initialContent = audioURL; // blob URL — shown instantly
+      initialContent = audioURL;
     } else {
       messageType = "text";
       initialContent = finalInput;
     }
 
-    // 1. Push optimistic message into UI immediately — no waiting
+    // 1. Optimistic UI update
     const optimisticMessage: Message = {
       id: messageId,
       role: "user",
@@ -213,7 +213,7 @@ export default function ChatArea() {
     };
     setMessages((prev) => [...prev, optimisticMessage]);
 
-    // 2. Clear inputs right away
+    // 2. Clear state
     setInput("");
     const currentMedia = media;
     const currentAudio = audioURL;
@@ -222,7 +222,7 @@ export default function ChatArea() {
     setAudioURL(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    // 3. Background: upload file → replace blob URL with final URL
+    // 3. Background process for uploads
     if (currentMedia || currentAudio) {
       (async () => {
         try {
@@ -238,7 +238,6 @@ export default function ChatArea() {
 
           const finalUrl = await uploadChatFile(fileToUpload);
 
-          // Swap blob URL → final URL, mark sent
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
@@ -246,7 +245,8 @@ export default function ChatArea() {
                 : msg,
             ),
           );
-        } catch {
+        } catch (error) {
+          console.error("Upload failed:", error);
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId ? { ...msg, status: "failed" } : msg,
@@ -256,7 +256,7 @@ export default function ChatArea() {
       })();
     }
 
-    // 4. Simulate AI response
+    // 4. Assistant Response Loop
     setIsTyping(true);
     setTimeout(() => {
       let aiResponse = `I've received your request about "${finalInput || "the file"}". As PaddyAI, I'm analyzing the field data...`;
@@ -286,7 +286,7 @@ export default function ChatArea() {
 
   return (
     <div
-      className={`flex flex-col h-full relative overflow-hidden ${isDragging ? "bg-primary/5" : ""}`}
+      className={`flex flex-col h-full relative overflow-hidden transition-colors ${isDragging ? "bg-primary/5" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -306,16 +306,28 @@ export default function ChatArea() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4"
+            className="fixed inset-0 z-100 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
             onClick={() => setLightboxSrc(null)}
           >
-            <motion.img
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              src={lightboxSrc}
-              className="max-w-full max-h-full rounded-2xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="relative max-w-full max-h-full"
+            >
+              <img
+                src={lightboxSrc}
+                className="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10 object-contain"
+                onClick={(e) => e.stopPropagation()}
+                alt="Enlarged view"
+              />
+              <button
+                onClick={() => setLightboxSrc(null)}
+                className="absolute -top-12 right-0 text-white/60 hover:text-white p-2 transition-colors"
+                title="Close Lightbox"
+              >
+                <X size={32} />
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -334,148 +346,212 @@ export default function ChatArea() {
         ref={scrollRef}
         className="grow overflow-y-auto no-scrollbar scroll-smooth"
       >
-        <div className="max-w-3xl mx-auto w-full px-4 pt-4 pb-56 md:pb-48">
+        <div className="max-w-3xl mx-auto w-full px-4 pt-0 md:pt-0 pb-80 md:pb-48">
           <AnimatePresence initial={false}>
             {messages.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center text-center"
+                className="flex flex-col items-center justify-start text-center pt-12 md:pt-16 pb-12"
               >
-                <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center text-primary mb-6 shadow-sm border border-primary/10">
-                  <Sparkles size={40} className="animate-pulse" />
-                </div>
-                <h1 className="text-4xl font-headline font-extrabold text-on-surface mb-3 tracking-tight">
+                <motion.div
+                  initial={{ scale: 0.8, rotate: -10 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                  className="w-24 h-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center text-primary mb-8 shadow-2xl shadow-primary/20 border border-primary/20 relative"
+                >
+                  <Sparkles size={48} className="animate-pulse" />
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 3 }}
+                    className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
+                  >
+                    AI
+                  </motion.div>
+                </motion.div>
+
+                <h1 className="text-5xl font-headline font-black text-on-surface mb-4 tracking-tighter leading-tight">
                   PaddyAI Assistant
                 </h1>
-                <p className="text-on-surface-variant max-w-md mx-auto text-lg font-medium leading-relaxed mb-12">
+                <p className="text-on-surface-variant/80 max-w-lg mx-auto text-xl font-medium leading-relaxed mb-16 px-6">
                   {t.chat.welcome}
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl px-4">
-                  {suggestions.map((s, i) => (
-                    <motion.button
-                      key={i}
-                      whileHover={{
-                        scale: 1.02,
-                        backgroundColor: "rgb(var(--primary-container) / 0.1)",
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleSend(s.text)}
-                      className={`flex items-center gap-4 p-5 rounded-3xl border border-surface-container-high bg-surface-container-lowest text-left transition-all group overflow-hidden relative cursor-pointer`}
-                    >
-                      <div
-                        className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container`}
+                <div className="w-full max-w-2xl px-4">
+                  <div className="flex items-center gap-3 mb-6 px-2">
+                    <div className="h-px grow bg-surface-container-high" />
+                    <span className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] whitespace-nowrap">
+                      Suggested Actions
+                    </span>
+                    <div className="h-px grow bg-surface-container-high" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {suggestions.map((s, i) => (
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0, x: i % 2 === 0 ? -10 : 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 + i * 0.05 }}
+                        whileHover={{
+                          scale: 1.02,
+                          y: -2,
+                          backgroundColor:
+                            "rgb(var(--primary-container) / 0.15)",
+                          borderColor: "rgb(var(--primary) / 0.3)",
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSend(s.text)}
+                        className={`flex items-center gap-5 p-6 rounded-4xl border border-surface-container-high bg-white/50 backdrop-blur-sm text-left transition-all group overflow-hidden relative cursor-pointer shadow-sm hover:shadow-md`}
                       >
-                        <s.icon
-                          className="text-on-surface-variant group-hover:text-primary transition-colors"
-                          size={24}
-                        />
-                      </div>
-                      <span className="text-sm font-bold text-on-surface leading-tight">
-                        {s.text}
-                      </span>
-                      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-10 transition-opacity">
-                        <Sparkles size={40} />
-                      </div>
-                    </motion.button>
-                  ))}
+                        <div
+                          className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container group-hover:scale-110 transition-transform duration-500`}
+                        >
+                          <s.icon
+                            className="text-on-surface-variant group-hover:text-primary transition-colors"
+                            size={28}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-lg font-bold text-on-surface leading-tight block mb-0.5">
+                            {s.text}
+                          </span>
+                          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">
+                            Quick Query
+                          </span>
+                        </div>
+                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-5 transition-opacity duration-700">
+                          <Sparkles size={60} />
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             ) : (
-              <div className="space-y-8">
-                {messages.map((msg) => {
+              <div className="space-y-10">
+                {messages.map((msg, idx) => {
                   const isUser = msg.role === "user";
                   return (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        delay: Math.min(idx * 0.05, 0.2),
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                      }}
                       className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}
                     >
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border shadow-sm ${
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border shadow-lg ${
                           isUser
-                            ? "bg-primary text-white border-primary/10"
+                            ? "bg-primary text-white border-primary/20"
                             : "bg-surface-container-low text-on-surface border-surface-container"
                         }`}
                       >
-                        {isUser ? <User size={18} /> : <Bot size={18} />}
-                      </div>
+                        {isUser ? <User size={20} /> : <Bot size={20} />}
+                      </motion.div>
                       <div
-                        className={`flex flex-col gap-2 max-w-[80%] ${isUser ? "items-end" : "items-start"}`}
+                        className={`flex flex-col gap-1.5 max-w-[85%] sm:max-w-[75%] ${isUser ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`px-5 py-4 rounded-3xl shadow-sm text-lg leading-relaxed relative ${
+                          className={`group relative px-6 py-5 rounded-4xl shadow-sm text-lg leading-relaxed transition-all duration-300 ${
                             isUser
-                              ? "bg-primary text-on-primary rounded-tr-none"
-                              : "bg-white text-on-surface border border-surface-container rounded-tl-none"
-                          } ${msg.status === "sending" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error" : ""}`}
+                              ? "bg-primary text-on-primary rounded-tr-none hover:shadow-xl hover:shadow-primary/10"
+                              : "bg-white text-on-surface border border-surface-container/60 rounded-tl-none hover:shadow-xl hover:shadow-black/5"
+                          } ${msg.status === "sending" ? "opacity-75 blur-[0.5px]" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-2 ring-error/20" : ""}`}
                         >
-                          {/* Image */}
                           {msg.type === "image" && (
-                            <div
-                              className="mb-4 rounded-2xl overflow-hidden shadow-inner border border-surface-container group relative cursor-zoom-in"
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              className="mb-4 rounded-2xl overflow-hidden shadow-2xl border border-surface-container group/img relative cursor-zoom-in"
                               onClick={() => setLightboxSrc(msg.content)}
                             >
                               <img
                                 src={msg.content}
-                                className="w-full max-h-80 object-cover"
+                                className="w-full max-h-125 object-cover"
+                                alt="Shared image"
                               />
-                            </div>
+                              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors flex items-center justify-center">
+                                <Maximize2
+                                  className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
+                                  size={32}
+                                />
+                              </div>
+                            </motion.div>
                           )}
-
-                          {/* Video */}
                           {msg.type === "video" && (
-                            <div className="mb-4 rounded-2xl overflow-hidden shadow-inner border border-surface-container">
+                            <div className="mb-4 rounded-2xl overflow-hidden shadow-2xl border border-surface-container group relative">
                               <video
                                 src={msg.content}
                                 controls
-                                className="w-full max-h-80"
+                                className="w-full max-h-125"
                               />
                             </div>
                           )}
-
-                          {/* Audio */}
                           {msg.type === "audio" && (
-                            <AudioPlayer
-                              id={msg.id}
-                              activeAudioId={activeAudioId}
-                              src={msg.content}
-                              variant={isUser ? "user" : "assistant"}
-                              onPlay={setActiveAudioId}
-                            />
+                            <div className="py-1">
+                              <AudioPlayer
+                                id={msg.id}
+                                activeAudioId={activeAudioId}
+                                src={msg.content}
+                                variant={isUser ? "user" : "assistant"}
+                                onPlay={setActiveAudioId}
+                              />
+                            </div>
+                          )}
+                          {msg.type === "text" && (
+                            <p className="whitespace-pre-wrap font-medium tracking-tight">
+                              {msg.content}
+                            </p>
                           )}
 
-                          {/* Text */}
-                          {msg.type === "text" && (
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                          {/* Status and Action Buttons */}
+                          <div
+                            className={`absolute -bottom-2 ${isUser ? "-left-12" : "-right-12"} flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}
+                          >
+                            {/* Copy button or similar could go here */}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex items-center gap-2 px-3 ${isUser ? "flex-row-reverse" : ""}`}
+                        >
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-[0.2em] ${msg.status === "failed" ? "text-error" : "text-on-surface-variant/30"}`}
+                          >
+                            {msg.timestamp.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+
+                          {isUser && (
+                            <div className="flex items-center gap-2">
+                              {msg.status === "sending" && (
+                                <Loader2
+                                  size={12}
+                                  className="animate-spin text-primary"
+                                />
+                              )}
+                              {msg.status === "failed" && (
+                                <AlertCircle size={12} className="text-error" />
+                              )}
+                              {msg.status === "sent" && (
+                                <div className="flex gap-0.5">
+                                  <Check
+                                    size={12}
+                                    className="text-primary-fixed"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                        <span
-                          className={`text-[10px] font-bold px-2 uppercase tracking-widest flex items-center gap-1.5 ${
-                            msg.status === "failed"
-                              ? "text-error"
-                              : "text-on-surface-variant/40"
-                          }`}
-                        >
-                          {msg.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {isUser && msg.status === "sending" && (
-                            <Loader2
-                              size={10}
-                              className="animate-spin text-primary"
-                            />
-                          )}
-                          {isUser && msg.status === "failed" && (
-                            <AlertCircle size={10} />
-                          )}
-                          {isUser && msg.status === "sent" && (
-                            <Check size={10} className="text-primary-fixed" />
-                          )}
-                        </span>
                       </div>
                     </motion.div>
                   );
@@ -486,49 +562,70 @@ export default function ChatArea() {
 
           {isTyping && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               className="flex gap-4 items-start mt-8"
             >
-              <div className="w-9 h-9 rounded-xl bg-surface-container-low border border-surface-container flex items-center justify-center animate-pulse">
-                <Bot size={18} className="text-on-surface-variant" />
+              <div className="relative">
+                <div className="w-10 h-10 rounded-2xl bg-surface-container-low border border-surface-container flex items-center justify-center shadow-lg">
+                  <Bot size={20} className="text-on-surface-variant/40" />
+                </div>
+                <motion.div
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="absolute inset-0 bg-primary/20 rounded-2xl -z-1"
+                />
               </div>
-              <div className="bg-white px-5 py-4 rounded-3xl rounded-tl-none border border-surface-container shadow-sm flex gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ opacity: [0.3, 1, 0.3] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.2,
-                      delay: i * 0.2,
-                    }}
-                    className="w-1.5 h-1.5 rounded-full bg-primary/40"
-                  />
-                ))}
+              <div className="bg-white px-6 py-5 rounded-4xl rounded-tl-none border border-surface-container/60 shadow-xl shadow-black/5 flex items-center gap-2">
+                <span className="text-sm font-black text-on-surface-variant/30 uppercase tracking-[0.2em] mr-2">
+                  Assistant Thinking
+                </span>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.3, 1, 0.3],
+                        backgroundColor: [
+                          "#E2E8F0",
+                          "rgb(var(--primary))",
+                          "#E2E8F0",
+                        ],
+                      }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1.5,
+                        delay: i * 0.2,
+                      }}
+                      className="w-1.5 h-1.5 rounded-full bg-surface-container-high"
+                    />
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
         </div>
       </div>
 
-      {/* Fixed Input Area — sits above mobile bottom nav */}
-      <div className="fixed bottom-[88px] md:bottom-0 left-0 right-0 p-4 md:p-6 bg-white/70 backdrop-blur-xl border-t border-surface-container/50 z-40">
-        <div className="max-w-3xl mx-auto w-full relative">
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-21 md:bottom-0 left-0 right-0 p-4 md:p-8 bg-linear-to-t from-white via-white/90 to-transparent pointer-events-none z-50">
+        <div className="max-w-3xl mx-auto w-full relative pointer-events-auto">
           {/* Media Preview Above Input */}
           <AnimatePresence>
             {media && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-4 bg-white/80 backdrop-blur-md p-3 rounded-2xl border border-surface-container shadow-lg flex items-center gap-4"
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-4 bg-white/90 backdrop-blur-xl p-3 rounded-3xl border border-surface-container shadow-2xl flex items-center gap-4 ring-1 ring-black/5"
               >
-                <div className="w-16 h-16 rounded-xl overflow-hidden shadow-inner border border-surface-container">
+                <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-inner border border-surface-container shrink-0">
                   {media.type === "image" ? (
                     <img
                       src={media.previewUrl}
                       className="w-full h-full object-cover"
+                      alt="Preview"
                     />
                   ) : (
                     <video
@@ -538,18 +635,18 @@ export default function ChatArea() {
                   )}
                 </div>
                 <div className="grow min-w-0">
-                  <p className="text-xs font-bold text-on-surface truncate">
+                  <p className="text-sm font-black text-on-surface truncate">
                     {media.file.name}
                   </p>
-                  <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-tight">
-                    {(media.size / 1024 / 1024).toFixed(2)} MB
+                  <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-widest mt-0.5">
+                    {(media.size / 1024 / 1024).toFixed(2)} MB • {media.type}
                   </p>
                 </div>
                 <button
                   onClick={() => setMedia(null)}
-                  className="w-10 h-10 rounded-full bg-error-container text-error flex items-center justify-center hover:bg-error hover:text-white transition-all shadow-sm"
+                  className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all shadow-sm cursor-pointer mr-2"
                 >
-                  <X size={20} />
+                  <X size={24} />
                 </button>
               </motion.div>
             )}
@@ -562,17 +659,19 @@ export default function ChatArea() {
                 handleSend();
               }
             }}
-            className="group relative flex items-center gap-2 bg-white rounded-[2.5rem] p-2 pr-2.5 shadow-2xl shadow-primary/5 hover:shadow-primary/10 transition-all border border-surface-container focus-within:ring-4 focus-within:ring-primary/5 focus-within:border-primary/40"
+            className="group relative flex items-center gap-2 bg-white rounded-[2.5rem] p-2 pr-3 shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)] transition-all duration-500 border border-surface-container/50 focus-within:ring-8 focus-within:ring-primary/5 focus-within:border-primary/30"
           >
             {!isRecording && !audioURL && (
               <>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-4 text-on-surface-variant hover:text-primary transition-colors h-13.5 w-13.5 flex items-center justify-center cursor-pointer hover:bg-primary/5 active:scale-95 rounded-full"
+                  className="p-4 text-on-surface-variant/40 hover:text-primary transition-all h-14 w-14 flex items-center justify-center cursor-pointer hover:bg-primary/5 rounded-full"
                 >
-                  <Paperclip size={24} />
-                </button>
+                  <Paperclip size={26} />
+                </motion.button>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -597,29 +696,38 @@ export default function ChatArea() {
                   }}
                   placeholder={t.chat.placeholder}
                   rows={1}
-                  className="grow bg-transparent border-none py-4 px-1 text-lg focus:ring-0 outline-none max-h-40 scrollbar-hide font-medium text-on-surface placeholder:text-on-surface-variant/40 resize-none"
+                  className="grow min-w-0 bg-transparent border-none py-4 px-2 text-lg font-medium focus:ring-0 outline-none max-h-40 scrollbar-hide text-on-surface placeholder:text-on-surface-variant/30 resize-none leading-relaxed"
                 />
               </>
             )}
 
             {isRecording && (
-              <div className="grow flex items-center gap-3 px-4 py-3.5 h-13.5 text-on-surface">
-                <motion.div
-                  animate={{ opacity: [1, 0.5, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="w-3 h-3 rounded-full bg-error"
-                />
-                <span className="font-bold tabular-nums text-error">
+              <div className="grow flex items-center gap-4 px-6 py-3.5 h-14 text-on-surface">
+                <div className="flex gap-1">
+                  {[...Array(4)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ height: [8, 20, 8] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.5,
+                        delay: i * 0.1,
+                      }}
+                      className="w-1 bg-error rounded-full"
+                    />
+                  ))}
+                </div>
+                <span className="font-black tabular-nums text-error tracking-tighter text-lg">
                   {formatTime(recordingDuration)}
                 </span>
-                <span className="text-on-surface-variant/60 font-medium text-md ml-2">
-                  Recording audio...
+                <span className="text-on-surface-variant/40 font-black text-[10px] uppercase tracking-[0.2em] ml-2">
+                  Capturing Audio...
                 </span>
               </div>
             )}
 
             {audioURL && !isRecording && (
-              <div className="grow flex items-center gap-3 px-2 h-13.5">
+              <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-4 px-2 md:px-4 h-14">
                 <div className="flex-1 min-w-0">
                   <AudioPlayer
                     id="preview"
@@ -632,58 +740,69 @@ export default function ChatArea() {
                 <button
                   type="button"
                   onClick={deleteAudio}
-                  className="w-10 h-10 shrink-0 text-on-surface-variant hover:text-error transition-colors flex items-center justify-center cursor-pointer rounded-full hover:bg-error/10"
+                  className="w-10 h-10 md:w-12 md:h-12 shrink-0 text-on-surface-variant/40 hover:text-error transition-all flex items-center justify-center cursor-pointer rounded-full hover:bg-error/10"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={24} />
                 </button>
               </div>
             )}
 
             {isRecording ? (
-              <button
+              <motion.button
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 type="button"
                 onClick={stopRecording}
-                className="h-13.5 w-13.5 rounded-full shrink-0 flex items-center justify-center transition-all bg-error text-white shadow-lg shadow-error/20 hover:scale-105 active:scale-95 cursor-pointer"
+                className="h-14 w-14 rounded-full shrink-0 flex items-center justify-center transition-all bg-error text-white shadow-xl shadow-error/20 cursor-pointer"
               >
                 <Square size={20} fill="currentColor" />
-              </button>
+              </motion.button>
             ) : (
               <div className="flex gap-1 shrink-0">
                 {!input.trim() && !media && !audioURL ? (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     type="button"
                     onClick={startRecording}
                     disabled={isTyping}
-                    className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    className={`h-14 w-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                       isTyping
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "text-on-surface-variant hover:text-primary hover:bg-primary/5 active:scale-95"
+                        : "text-on-surface-variant/40 hover:text-primary hover:bg-primary/5"
                     }`}
                   >
-                    <Mic size={24} />
-                  </button>
+                    <Mic size={26} />
+                  </motion.button>
                 ) : (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
                     type="submit"
                     disabled={
                       (!input.trim() && !media && !audioURL) || isTyping
                     }
-                    className={`h-13.5 w-13.5 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    className={`h-14 w-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
                       (!input.trim() && !media && !audioURL) || isTyping
                         ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 active:scale-95"
+                        : "bg-primary text-white shadow-2xl shadow-primary/30"
                     }`}
                   >
                     {isTyping ? (
-                      <Loader2 size={24} className="animate-spin" />
+                      <Loader2 size={26} className="animate-spin" />
                     ) : (
-                      <Send size={24} />
+                      <Send size={26} />
                     )}
-                  </button>
+                  </motion.button>
                 )}
               </div>
             )}
           </form>
+          <p className="text-center text-[10px] font-bold text-on-surface-variant/20 mt-4 uppercase tracking-[0.2em] pointer-events-none">
+            PaddyAI can make mistakes. Check important info.
+          </p>
         </div>
       </div>
     </div>
