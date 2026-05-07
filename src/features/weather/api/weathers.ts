@@ -34,6 +34,6 @@ export const reverseGeocodeAPI = async (lat: number, lon: number): Promise<strin
     return "Field Location";
   } catch (error) {
     console.error("Reverse geocoding failed:", error);
-    return "Field Site";
+    return "-";
   }
 };
