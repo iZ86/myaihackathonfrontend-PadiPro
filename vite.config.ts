@@ -17,7 +17,8 @@ export default defineConfig({
       "@components": path.resolve(__dirname, "src/components"),
       "@features": path.resolve(__dirname, "src/features"),
       "@datatypes": path.resolve(__dirname, "src/datatypes"),
-      "@context": path.resolve(__dirname, "src/context")
+      "@context": path.resolve(__dirname, "src/context"),
+      "@config": path.resolve(__dirname, "src/config")
     }
   }
-})
+});
