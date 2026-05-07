@@ -116,13 +116,13 @@ export default function ProfileCard() {
             <div>
               <h3 className="font-headline font-bold text-lg text-on-surface">
                 {hasLocationPermission
-                  ? "Location Enabled"
-                  : "Location Required"}
+                  ? t.profile.locationEnabled
+                  : t.profile.locationRequired}
               </h3>
               <p className="text-sm text-on-surface-variant max-w-md">
                 {hasLocationPermission
-                  ? "Your farm's location is synced for precise analysis."
-                  : "Location is required to use Chat, Weather, and History features."}
+                  ? t.profile.locationEnabledDesc
+                  : t.profile.locationRequiredDesc}
               </p>
               {locationError && (
                 <p className="text-xs text-error mt-2 font-medium bg-error-container/50 px-3 py-1.5 rounded-md inline-block">
@@ -131,22 +131,29 @@ export default function ProfileCard() {
               )}
             </div>
           </div>
-          {!hasLocationPermission && (
-            <button
-              onClick={() => requestLocation()}
-              disabled={isLocationLoading}
-              className="px-6 py-2.5 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary-fixed hover:text-on-primary-fixed transition-all flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer"
-            >
-              {isLocationLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Requesting...
-                </>
-              ) : (
-                "Enable Location"
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => requestLocation()}
+            disabled={isLocationLoading}
+            className={`px-6 py-2.5 rounded-full font-bold shadow-lg transition-all flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50 cursor-pointer ${
+              hasLocationPermission
+                ? "bg-surface-container text-on-surface hover:bg-surface-container-high"
+                : "bg-primary text-white hover:bg-primary-fixed hover:text-on-primary-fixed"
+            }`}
+          >
+            {isLocationLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {hasLocationPermission ? t.profile.updating : t.profile.requesting}
+              </>
+            ) : hasLocationPermission ? (
+              <>
+                <MapPin className="w-4 h-4" />
+                {t.profile.updateLocation}
+              </>
+            ) : (
+              t.profile.enableLocation
+            )}
+          </button>
         </div>
       </motion.div>
 
@@ -162,7 +169,7 @@ export default function ProfileCard() {
               <UserIcon className="w-5 h-5 text-primary" />
             </div>
             <h2 className="text-xl font-bold tracking-tight font-headline">
-              Account Settings
+              {t.profile.accountSettings}
             </h2>
           </div>
           <div className="space-y-4">
