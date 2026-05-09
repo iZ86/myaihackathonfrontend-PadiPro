@@ -39,7 +39,7 @@ export async function uploadChatFile(file: File): Promise<string> {
 
 export const getChatHistoryAPI = async (token: string, mobileNo: string): Promise<Response | undefined> => {
   try {
-    return await fetch(`${backendServerConfig.backendServerUrl}/whatsapp/history/${mobileNo}`, {
+    return await fetch(`${backendServerConfig.backendServerUrl}/webchat/history/${mobileNo}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
