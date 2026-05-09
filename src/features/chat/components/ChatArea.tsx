@@ -18,12 +18,17 @@ import {
   AlertCircle,
   Check,
   Maximize2,
+  Download,
 } from "lucide-react";
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
 import AudioPlayer from "./AudioPlayer";
 import { useAuth } from "@context/auth/useAuth";
-import { uploadChatFile } from "../api/chat";
+import {
+  uploadChatFile,
+  sendWebchatMessageAPI,
+  getChatHistoryAPI,
+} from "../api/chat";
 
 interface MediaAttachment {
   file: File;
@@ -46,11 +51,13 @@ export default function ChatArea() {
   const [media, setMedia] = useState<MediaAttachment | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [mobileNo, setMobileNo] = useState(user?.mobile_no ?? "");
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -82,9 +89,64 @@ export default function ChatArea() {
     },
   ];
 
-  // Auto-scroll to bottom
+  // Load chat history on mount
   useEffect(() => {
-    if (scrollRef.current) {
+    const loadHistory = async () => {
+      const token = localStorage.getItem("token") ?? "";
+
+      setMobileNo(user?.mobile_no ?? "");
+      if (!mobileNo) {
+        setIsLoadingHistory(false);
+        return;
+      }
+      try {
+        const response = await getChatHistoryAPI(token, mobileNo);
+
+        if (!response || !response.ok)
+          throw new Error("Failed to fetch history");
+
+        const json = await response.json();
+
+        if (json.success && Array.isArray(json.data)) {
+          const detectType = (url: string): Message["type"] => {
+            if (!url) return "text";
+            if (url.includes("/videos/")) return "video";
+            if (url.includes("/audios/")) return "audio";
+            return "image";
+          };
+
+          const history: Message[] = json.data.map(
+            (item: {
+              role: string;
+              message: string;
+              media_url?: string;
+              media_name?: string;
+              timestamp: { _seconds: number; _nanoseconds: number };
+            }) => ({
+              id: crypto.randomUUID(),
+              role: item.role === "model" ? "assistant" : "user",
+              type: detectType(item.media_url ?? ""),
+              content: item.message ?? "",
+              mediaUrl: item.media_url || undefined,
+              mediaName: item.media_name || undefined,
+              status: "sent" as const,
+              timestamp: new Date(item.timestamp._seconds * 1000),
+            }),
+          );
+          setMessages(history);
+        }
+      } catch (err) {
+        console.error("Failed to load chat history:", err);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+    loadHistory();
+  }, [mobileNo, user?.mobile_no]);
+
+  // Auto-scroll to bottom only when there are messages
+  useEffect(() => {
+    if (scrollRef.current && (messages.length > 0 || isTyping)) {
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
         behavior: "smooth",
@@ -207,7 +269,9 @@ export default function ChatArea() {
       id: messageId,
       role: "user",
       type: messageType,
-      content: initialContent,
+      content: messageType === "text" ? finalInput : "",
+      mediaUrl: messageType !== "text" ? initialContent : undefined,
+      mediaName: media?.file.name,
       status: messageType !== "text" ? "sending" : "sent",
       timestamp,
     };
@@ -222,66 +286,109 @@ export default function ChatArea() {
     setAudioURL(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
-    // 3. Background process for uploads
-    if (currentMedia || currentAudio) {
-      (async () => {
+    setIsTyping(true);
+
+    try {
+      let mediaUrl: string | undefined;
+
+      // 3. Upload media/image/video first if present, then call API
+      if (currentMedia) {
         try {
-          let fileToUpload: File;
-          if (currentMedia) {
-            fileToUpload = currentMedia.file;
-          } else {
-            const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
-            fileToUpload = new File([blob], "audio_message.webm", {
-              type: "audio/webm",
-            });
-          }
-
-          const finalUrl = await uploadChatFile(fileToUpload);
-
+          mediaUrl = await uploadChatFile(mobileNo, currentMedia.file);
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
-                ? { ...msg, content: finalUrl, status: "sent" }
+                ? { ...msg, mediaUrl: mediaUrl!, status: "sent" }
                 : msg,
             ),
           );
-        } catch (error) {
-          console.error("Upload failed:", error);
+        } catch {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId ? { ...msg, status: "failed" } : msg,
+            ),
+          );
+          setIsTyping(false);
+          return;
+        }
+      }
+
+      // Audio upload only — backend has no audio handler yet so skip API call
+      if (currentAudio) {
+        try {
+          const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
+          const file = new File([blob], "audio_message.webm", {
+            type: "audio/webm",
+          });
+          const finalUrl = await uploadChatFile(mobileNo, file);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, mediaUrl: finalUrl, status: "sent" }
+                : msg,
+            ),
+          );
+        } catch {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId ? { ...msg, status: "failed" } : msg,
             ),
           );
         }
-      })();
-    }
-
-    // 4. Assistant Response Loop
-    setIsTyping(true);
-    setTimeout(() => {
-      let aiResponse = `I've received your request about "${finalInput || "the file"}". As PaddyAI, I'm analyzing the field data...`;
-
-      if (currentMedia) {
-        aiResponse =
-          currentMedia.type === "image"
-            ? "Analysis complete. I've detected symptoms of Nitrogen deficiency on the leaves. Consider applying targeted fertilization in the northern sector."
-            : "Video review suggests efficient irrigation patterns, but the soil moisture sensors in Plot B are indicating slight underwatering.";
-      } else if (currentAudio) {
-        aiResponse =
-          "I have processed your audio message. Based on your description, I recommend scheduling a field inspection for pests soon.";
+        setIsTyping(false);
+        return;
       }
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        type: "text",
-        content: aiResponse,
-        status: "sent",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      // 4. Call the webchat API (text and/or media)
+      const token = localStorage.getItem("token") ?? "local-storage-auth";
+      const mediaName = currentMedia?.file.name.split(".")[0];
+
+      const response = await sendWebchatMessageAPI(
+        token,
+        mobileNo,
+        finalInput || undefined,
+        mediaUrl,
+        mediaName,
+      );
+
+      if (!response || !response.ok) {
+        throw new Error("API request failed");
+      }
+
+      const json = await response.json();
+      if (!json.success || !json.data?.messages) {
+        throw new Error(json.message || "Invalid response from server");
+      }
+
+      // 5. Render assistant messages
+      const assistantMessages: Message[] = json.data.messages.map(
+        (msg: { message: string; type: string; document_url?: string }) => ({
+          id: crypto.randomUUID(),
+          role: "assistant" as const,
+          type: "text" as const,
+          content: msg.message,
+          status: "sent" as const,
+          timestamp: new Date(),
+          document_url: msg.document_url,
+        }),
+      );
+      setMessages((prev) => [...prev, ...assistantMessages]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          type: "text",
+          content: "Sorry, something went wrong. Please try again.",
+          status: "sent",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -346,39 +453,66 @@ export default function ChatArea() {
         ref={scrollRef}
         className="grow overflow-y-auto no-scrollbar scroll-smooth"
       >
-        <div className="max-w-3xl mx-auto w-full px-4 pt-0 md:pt-0 pb-80 md:pb-48">
+        <div className="max-w-3xl mx-auto w-full px-4 pt-2 pb-48 md:pb-36">
           <AnimatePresence initial={false}>
-            {messages.length === 0 ? (
+            {isLoadingHistory ? (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center pt-24 gap-4"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-surface-container-low border border-surface-container flex items-center justify-center shadow-lg">
+                  <Bot size={20} className="text-on-surface-variant/40" />
+                </div>
+                <div className="flex gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1.5,
+                        delay: i * 0.2,
+                      }}
+                      className="w-1.5 h-1.5 rounded-full bg-surface-container-high"
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-black text-on-surface-variant/30 uppercase tracking-[0.2em]">
+                  Loading history…
+                </span>
+              </motion.div>
+            ) : messages.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-start text-center pt-12 md:pt-16 pb-12"
+                className="flex flex-col items-center justify-start text-center pt-6 pb-4"
               >
                 <motion.div
-                  initial={{ scale: 0.8, rotate: -10 }}
+                  initial={{ scale: 0.85, rotate: -8 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                  className="w-24 h-24 bg-primary/10 rounded-[2.5rem] flex items-center justify-center text-primary mb-8 shadow-2xl shadow-primary/20 border border-primary/20 relative"
+                  transition={{ type: "spring", stiffness: 220, damping: 22 }}
+                  className="w-16 h-16 bg-primary/10 rounded-[1.4rem] flex items-center justify-center text-primary mb-4 shadow-xl shadow-primary/15 border border-primary/15 relative"
                 >
-                  <Sparkles size={48} className="animate-pulse" />
+                  <Sparkles size={30} className="animate-pulse" />
                   <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
                     transition={{ repeat: Infinity, duration: 3 }}
-                    className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg"
+                    className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-[9px] font-bold shadow-md"
                   >
                     AI
                   </motion.div>
                 </motion.div>
 
-                <h1 className="text-5xl font-headline font-black text-on-surface mb-4 tracking-tighter leading-tight">
-                  PaddyAI Assistant
+                <h1 className="text-2xl font-headline font-black text-on-surface mb-1.5 tracking-tight leading-tight">
+                  PadiPro Assistant
                 </h1>
-                <p className="text-on-surface-variant/80 max-w-lg mx-auto text-xl font-medium leading-relaxed mb-16 px-6">
+                <p className="text-on-surface-variant/70 max-w-xs mx-auto text-sm font-medium leading-relaxed mb-6 px-2">
                   {t.chat.welcome}
                 </p>
 
-                <div className="w-full max-w-2xl px-4">
-                  <div className="flex items-center gap-3 mb-6 px-2">
+                <div className="w-full px-1">
+                  <div className="flex items-center gap-3 mb-3 px-1">
                     <div className="h-px grow bg-surface-container-high" />
                     <span className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] whitespace-nowrap">
                       Suggested Actions
@@ -386,42 +520,33 @@ export default function ChatArea() {
                     <div className="h-px grow bg-surface-container-high" />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {suggestions.map((s, i) => (
                       <motion.button
                         key={i}
-                        initial={{ opacity: 0, x: i % 2 === 0 ? -10 : 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + i * 0.05 }}
-                        whileHover={{
-                          scale: 1.02,
-                          y: -2,
-                          backgroundColor:
-                            "rgb(var(--primary-container) / 0.15)",
-                          borderColor: "rgb(var(--primary) / 0.3)",
-                        }}
-                        whileTap={{ scale: 0.98 }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.06 + i * 0.05 }}
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => handleSend(s.text)}
-                        className={`flex items-center gap-5 p-6 rounded-4xl border border-surface-container-high bg-white/50 backdrop-blur-sm text-left transition-all group overflow-hidden relative cursor-pointer shadow-sm hover:shadow-md`}
+                        className="flex flex-col items-start gap-2.5 p-3.5 rounded-2xl border border-surface-container-high bg-white/60 backdrop-blur-sm text-left transition-all cursor-pointer shadow-sm hover:shadow-md hover:border-primary/20 group"
                       >
                         <div
-                          className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container group-hover:scale-110 transition-transform duration-500`}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container`}
                         >
                           <s.icon
                             className="text-on-surface-variant group-hover:text-primary transition-colors"
-                            size={28}
+                            size={17}
                           />
                         </div>
                         <div>
-                          <span className="text-lg font-bold text-on-surface leading-tight block mb-0.5">
+                          <span className="text-sm font-bold text-on-surface leading-tight block">
                             {s.text}
                           </span>
-                          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">
+                          <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-wider">
                             Quick Query
                           </span>
-                        </div>
-                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-5 transition-opacity duration-700">
-                          <Sparkles size={60} />
                         </div>
                       </motion.button>
                     ))}
@@ -429,85 +554,116 @@ export default function ChatArea() {
                 </div>
               </motion.div>
             ) : (
-              <div className="space-y-10">
+              <div className="space-y-3 pt-2">
                 {messages.map((msg, idx) => {
                   const isUser = msg.role === "user";
                   return (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{
-                        delay: Math.min(idx * 0.05, 0.2),
+                        delay: Math.min(idx * 0.03, 0.15),
                         type: "spring",
-                        stiffness: 400,
-                        damping: 30,
+                        stiffness: 420,
+                        damping: 32,
                       }}
-                      className={`flex gap-4 ${isUser ? "flex-row-reverse" : ""}`}
+                      className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
                     >
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border shadow-lg ${
+                      <div
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1 ${
                           isUser
-                            ? "bg-primary text-white border-primary/20"
-                            : "bg-surface-container-low text-on-surface border-surface-container"
+                            ? "bg-primary text-white"
+                            : "bg-surface-container text-on-surface-variant"
                         }`}
                       >
-                        {isUser ? <User size={20} /> : <Bot size={20} />}
-                      </motion.div>
+                        {isUser ? <User size={14} /> : <Bot size={14} />}
+                      </div>
                       <div
-                        className={`flex flex-col gap-1.5 max-w-[85%] sm:max-w-[75%] ${isUser ? "items-end" : "items-start"}`}
+                        className={`flex flex-col gap-1 ${
+                          msg.type === "image" || msg.type === "video"
+                            ? "w-[75%]"
+                            : "max-w-[80%] sm:max-w-[72%]"
+                        } ${isUser ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`group relative px-6 py-5 rounded-4xl shadow-sm text-lg leading-relaxed transition-all duration-300 ${
+                          className={`group relative rounded-2xl text-sm leading-relaxed transition-shadow duration-200 overflow-hidden ${
+                            msg.type === "text" || msg.type === "audio"
+                              ? "px-4 py-3"
+                              : "w-full"
+                          } ${
                             isUser
-                              ? "bg-primary text-on-primary rounded-tr-none hover:shadow-xl hover:shadow-primary/10"
-                              : "bg-white text-on-surface border border-surface-container/60 rounded-tl-none hover:shadow-xl hover:shadow-black/5"
-                          } ${msg.status === "sending" ? "opacity-75 blur-[0.5px]" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-2 ring-error/20" : ""}`}
+                              ? "bg-primary text-on-primary rounded-tr-sm hover:shadow-lg hover:shadow-primary/15"
+                              : "bg-white text-on-surface border border-surface-container/70 rounded-tl-sm hover:shadow-md hover:shadow-black/5"
+                          } ${msg.status === "sending" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-1 ring-error/20" : ""}`}
                         >
                           {msg.type === "image" && (
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              className="mb-4 rounded-2xl overflow-hidden shadow-2xl border border-surface-container group/img relative cursor-zoom-in"
-                              onClick={() => setLightboxSrc(msg.content)}
-                            >
-                              <img
-                                src={msg.content}
-                                className="w-full max-h-125 object-cover"
-                                alt="Shared image"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors flex items-center justify-center">
-                                <Maximize2
-                                  className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
-                                  size={32}
+                            <>
+                              <div
+                                className="relative group/img cursor-zoom-in"
+                                onClick={() =>
+                                  setLightboxSrc(msg.mediaUrl ?? "")
+                                }
+                              >
+                                <img
+                                  src={msg.mediaUrl}
+                                  className="w-full max-h-72 object-cover block"
+                                  alt="Shared image"
                                 />
+                                <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/15 transition-colors flex items-center justify-center">
+                                  <Maximize2
+                                    className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
+                                    size={24}
+                                  />
+                                </div>
                               </div>
-                            </motion.div>
+                              {msg.content && (
+                                <p className="px-3 py-2 text-sm whitespace-pre-wrap">
+                                  {msg.content}
+                                </p>
+                              )}
+                            </>
                           )}
                           {msg.type === "video" && (
-                            <div className="mb-4 rounded-2xl overflow-hidden shadow-2xl border border-surface-container group relative">
+                            <>
                               <video
-                                src={msg.content}
+                                src={msg.mediaUrl}
                                 controls
-                                className="w-full max-h-125"
+                                className="w-full max-h-72 block"
                               />
-                            </div>
+                              {msg.content && (
+                                <p className="px-3 py-2 text-sm whitespace-pre-wrap">
+                                  {msg.content}
+                                </p>
+                              )}
+                            </>
                           )}
-                          {msg.type === "audio" && (
-                            <div className="py-1">
-                              <AudioPlayer
-                                id={msg.id}
-                                activeAudioId={activeAudioId}
-                                src={msg.content}
-                                variant={isUser ? "user" : "assistant"}
-                                onPlay={setActiveAudioId}
-                              />
-                            </div>
+                          {msg.type === "audio" && msg.mediaUrl && (
+                            <AudioPlayer
+                              id={msg.id}
+                              activeAudioId={activeAudioId}
+                              src={msg.mediaUrl}
+                              variant={isUser ? "user" : "assistant"}
+                              onPlay={setActiveAudioId}
+                            />
                           )}
                           {msg.type === "text" && (
-                            <p className="whitespace-pre-wrap font-medium tracking-tight">
-                              {msg.content}
-                            </p>
+                            <>
+                              <p className="whitespace-pre-wrap font-medium tracking-tight">
+                                {msg.content}
+                              </p>
+                              {msg.document_url && (
+                                <a
+                                  href={msg.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-3 flex items-center gap-2 text-sm font-bold text-primary hover:underline"
+                                >
+                                  <Download size={14} />
+                                  Download Solution Plan
+                                </a>
+                              )}
+                            </>
                           )}
 
                           {/* Status and Action Buttons */}
@@ -519,10 +675,10 @@ export default function ChatArea() {
                         </div>
 
                         <div
-                          className={`flex items-center gap-2 px-3 ${isUser ? "flex-row-reverse" : ""}`}
+                          className={`flex items-center gap-1.5 px-1 ${isUser ? "flex-row-reverse" : ""}`}
                         >
                           <span
-                            className={`text-[10px] font-black uppercase tracking-[0.2em] ${msg.status === "failed" ? "text-error" : "text-on-surface-variant/30"}`}
+                            className={`text-[10px] font-semibold ${msg.status === "failed" ? "text-error" : "text-on-surface-variant/30"}`}
                           >
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
@@ -562,43 +718,25 @@ export default function ChatArea() {
 
           {isTyping && (
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex gap-4 items-start mt-8"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-2.5 items-start mt-3"
             >
-              <div className="relative">
-                <div className="w-10 h-10 rounded-2xl bg-surface-container-low border border-surface-container flex items-center justify-center shadow-lg">
-                  <Bot size={20} className="text-on-surface-variant/40" />
-                </div>
-                <motion.div
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="absolute inset-0 bg-primary/20 rounded-2xl -z-1"
-                />
+              <div className="w-7 h-7 rounded-xl bg-surface-container flex items-center justify-center shrink-0 mt-1">
+                <Bot size={14} className="text-on-surface-variant/50" />
               </div>
-              <div className="bg-white px-6 py-5 rounded-4xl rounded-tl-none border border-surface-container/60 shadow-xl shadow-black/5 flex items-center gap-2">
-                <span className="text-sm font-black text-on-surface-variant/30 uppercase tracking-[0.2em] mr-2">
-                  Assistant Thinking
-                </span>
-                <div className="flex gap-1.5">
+              <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-surface-container/70 shadow-sm flex items-center gap-2">
+                <div className="flex gap-1">
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      animate={{
-                        scale: [1, 1.5, 1],
-                        opacity: [0.3, 1, 0.3],
-                        backgroundColor: [
-                          "#E2E8F0",
-                          "rgb(var(--primary))",
-                          "#E2E8F0",
-                        ],
-                      }}
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
                       transition={{
                         repeat: Infinity,
-                        duration: 1.5,
-                        delay: i * 0.2,
+                        duration: 1.2,
+                        delay: i * 0.18,
                       }}
-                      className="w-1.5 h-1.5 rounded-full bg-surface-container-high"
+                      className="w-1.5 h-1.5 rounded-full bg-primary/50"
                     />
                   ))}
                 </div>
@@ -609,18 +747,18 @@ export default function ChatArea() {
       </div>
 
       {/* Fixed Input Area */}
-      <div className="fixed bottom-21 md:bottom-0 left-0 right-0 p-4 md:p-8 bg-linear-to-t from-white via-white/90 to-transparent pointer-events-none z-50">
-        <div className="max-w-3xl mx-auto w-full relative pointer-events-auto">
+      <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-6 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/95 to-transparent pointer-events-none z-50">
+        <div className="max-w-2xl mx-auto w-full relative pointer-events-auto">
           {/* Media Preview Above Input */}
           <AnimatePresence>
             {media && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                initial={{ opacity: 0, scale: 0.95, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-4 bg-white/90 backdrop-blur-xl p-3 rounded-3xl border border-surface-container shadow-2xl flex items-center gap-4 ring-1 ring-black/5"
+                className="mb-2 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl border border-surface-container shadow-lg flex items-center gap-3"
               >
-                <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-inner border border-surface-container shrink-0">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-surface-container shrink-0">
                   {media.type === "image" ? (
                     <img
                       src={media.previewUrl}
@@ -635,18 +773,18 @@ export default function ChatArea() {
                   )}
                 </div>
                 <div className="grow min-w-0">
-                  <p className="text-sm font-black text-on-surface truncate">
+                  <p className="text-sm font-bold text-on-surface truncate">
                     {media.file.name}
                   </p>
-                  <p className="text-[10px] text-on-surface-variant uppercase font-black tracking-widest mt-0.5">
+                  <p className="text-[10px] text-on-surface-variant/50 uppercase font-semibold tracking-wider mt-0.5">
                     {(media.size / 1024 / 1024).toFixed(2)} MB • {media.type}
                   </p>
                 </div>
                 <button
                   onClick={() => setMedia(null)}
-                  className="w-12 h-12 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all shadow-sm cursor-pointer mr-2"
+                  className="w-8 h-8 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all cursor-pointer"
                 >
-                  <X size={24} />
+                  <X size={16} />
                 </button>
               </motion.div>
             )}
@@ -655,22 +793,20 @@ export default function ChatArea() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!isRecording) {
-                handleSend();
-              }
+              if (!isRecording) handleSend();
             }}
-            className="group relative flex items-center gap-2 bg-white rounded-[2.5rem] p-2 pr-3 shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.15)] transition-all duration-500 border border-surface-container/50 focus-within:ring-8 focus-within:ring-primary/5 focus-within:border-primary/30"
+            className="flex items-center gap-2 bg-white rounded-2xl px-2 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.09)] border border-surface-container/60 focus-within:border-primary/30 focus-within:shadow-[0_4px_28px_rgba(0,0,0,0.12)] transition-all duration-300"
           >
             {!isRecording && !audioURL && (
               <>
                 <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-4 text-on-surface-variant/40 hover:text-primary transition-all h-14 w-14 flex items-center justify-center cursor-pointer hover:bg-primary/5 rounded-full"
+                  className="p-2.5 text-on-surface-variant/40 hover:text-primary transition-colors rounded-xl hover:bg-primary/5 cursor-pointer shrink-0"
                 >
-                  <Paperclip size={26} />
+                  <Paperclip size={20} />
                 </motion.button>
                 <input
                   ref={fileInputRef}
@@ -683,7 +819,6 @@ export default function ChatArea() {
                     e.target.value = "";
                   }}
                 />
-
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -696,18 +831,18 @@ export default function ChatArea() {
                   }}
                   placeholder={t.chat.placeholder}
                   rows={1}
-                  className="grow min-w-0 bg-transparent border-none py-4 px-2 text-lg font-medium focus:ring-0 outline-none max-h-40 scrollbar-hide text-on-surface placeholder:text-on-surface-variant/30 resize-none leading-relaxed"
+                  className="grow min-w-0 bg-transparent border-none py-2.5 px-1 text-sm font-medium focus:ring-0 outline-none max-h-32 scrollbar-hide text-on-surface placeholder:text-on-surface-variant/35 resize-none leading-relaxed"
                 />
               </>
             )}
 
             {isRecording && (
-              <div className="grow flex items-center gap-4 px-6 py-3.5 h-14 text-on-surface">
-                <div className="flex gap-1">
+              <div className="grow flex items-center gap-3 px-3 py-2">
+                <div className="flex gap-0.5">
                   {[...Array(4)].map((_, i) => (
                     <motion.div
                       key={i}
-                      animate={{ height: [8, 20, 8] }}
+                      animate={{ height: [6, 16, 6] }}
                       transition={{
                         repeat: Infinity,
                         duration: 0.5,
@@ -717,17 +852,17 @@ export default function ChatArea() {
                     />
                   ))}
                 </div>
-                <span className="font-black tabular-nums text-error tracking-tighter text-lg">
+                <span className="font-bold tabular-nums text-error text-sm">
                   {formatTime(recordingDuration)}
                 </span>
-                <span className="text-on-surface-variant/40 font-black text-[10px] uppercase tracking-[0.2em] ml-2">
-                  Capturing Audio...
+                <span className="text-on-surface-variant/40 font-semibold text-[10px] uppercase tracking-wider">
+                  Recording…
                 </span>
               </div>
             )}
 
             {audioURL && !isRecording && (
-              <div className="flex-1 min-w-0 flex items-center gap-2 md:gap-4 px-2 md:px-4 h-14">
+              <div className="flex-1 min-w-0 flex items-center gap-2 px-2">
                 <div className="flex-1 min-w-0">
                   <AudioPlayer
                     id="preview"
@@ -740,9 +875,9 @@ export default function ChatArea() {
                 <button
                   type="button"
                   onClick={deleteAudio}
-                  className="w-10 h-10 md:w-12 md:h-12 shrink-0 text-on-surface-variant/40 hover:text-error transition-all flex items-center justify-center cursor-pointer rounded-full hover:bg-error/10"
+                  className="w-8 h-8 shrink-0 text-on-surface-variant/40 hover:text-error transition-all flex items-center justify-center cursor-pointer rounded-full hover:bg-error/10"
                 >
-                  <Trash2 size={24} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             )}
@@ -751,57 +886,56 @@ export default function ChatArea() {
               <motion.button
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.92 }}
                 type="button"
                 onClick={stopRecording}
-                className="h-14 w-14 rounded-full shrink-0 flex items-center justify-center transition-all bg-error text-white shadow-xl shadow-error/20 cursor-pointer"
+                className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center bg-error text-white shadow-lg shadow-error/20 cursor-pointer"
               >
-                <Square size={20} fill="currentColor" />
+                <Square size={16} fill="currentColor" />
               </motion.button>
             ) : (
-              <div className="flex gap-1 shrink-0">
+              <div className="shrink-0">
                 {!input.trim() && !media && !audioURL ? (
                   <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
                     type="button"
                     onClick={startRecording}
                     disabled={isTyping}
-                    className={`h-14 w-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                       isTyping
-                        ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "text-on-surface-variant/40 hover:text-primary hover:bg-primary/5"
+                        ? "bg-surface-container text-on-surface-variant opacity-40 cursor-not-allowed"
+                        : "text-on-surface-variant/40 hover:text-primary hover:bg-primary/8"
                     }`}
                   >
-                    <Mic size={26} />
+                    <Mic size={20} />
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.93 }}
                     type="submit"
                     disabled={
                       (!input.trim() && !media && !audioURL) || isTyping
                     }
-                    className={`h-14 w-14 rounded-full flex items-center justify-center transition-all cursor-pointer ${
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                       (!input.trim() && !media && !audioURL) || isTyping
-                        ? "bg-surface-container-high text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "bg-primary text-white shadow-2xl shadow-primary/30"
+                        ? "bg-surface-container text-on-surface-variant opacity-40 cursor-not-allowed"
+                        : "bg-primary text-white shadow-lg shadow-primary/25"
                     }`}
                   >
                     {isTyping ? (
-                      <Loader2 size={26} className="animate-spin" />
+                      <Loader2 size={18} className="animate-spin" />
                     ) : (
-                      <Send size={26} />
+                      <Send size={18} />
                     )}
                   </motion.button>
                 )}
               </div>
             )}
           </form>
-          <p className="text-center text-[10px] font-bold text-on-surface-variant/20 mt-4 uppercase tracking-[0.2em] pointer-events-none">
-            PaddyAI can make mistakes. Check important info.
+          <p className="text-center text-[10px] font-medium text-on-surface-variant/20 mt-2 pointer-events-none">
+            PadiPro can make mistakes. Check important info.
           </p>
         </div>
       </div>
