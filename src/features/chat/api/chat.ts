@@ -29,12 +29,10 @@ export async function uploadFileToStorage(uploadUrl: string, file: File): Promis
   }
 }
 
-export async function uploadChatFile(file: File): Promise<string> {
-  const uploadUrl = await getUploadUrl(file.name, file.type);
+export async function uploadChatFile(mobileNo: string, file: File): Promise<string> {
+  const { uploadUrl, downloadUrl } = await getUploadUrl(mobileNo, file.name, file.type);
   await uploadFileToStorage(uploadUrl, file);
-
-  const finalUrl = uploadUrl.split("?")[0];
-  return finalUrl;
+  return downloadUrl;
 }
 
 export const sendWebchatMessageAPI = async (
