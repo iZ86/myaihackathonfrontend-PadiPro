@@ -1,7 +1,7 @@
 import { backendServerConfig } from "@config/config";
 
-export async function getUploadUrl(fileName: string, contentType: string): Promise<string> {
-  const res = await fetch(`${backendServerConfig.backendServerUrl}/webchat/upload/url`, {
+export async function getUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<{ uploadUrl: string; downloadUrl: string; }> {
+  const res = await fetch(`${backendServerConfig.backendServerUrl}/webchat/upload/url/${mobileNo}`, {
     method: 'POST',
     body: JSON.stringify({
       fileName,
