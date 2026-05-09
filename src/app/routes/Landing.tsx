@@ -116,7 +116,7 @@ function HeroChatMockup() {
                   color: "#1c1c18",
                 }}
               >
-                PaddyAI
+                PadiPro
               </p>
               <p style={{ fontSize: "0.65rem", color: "#707973" }}>
                 Smart Crop Assistant
