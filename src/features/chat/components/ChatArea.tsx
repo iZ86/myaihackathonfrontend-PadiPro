@@ -26,6 +26,7 @@ import AudioPlayer from "./AudioPlayer";
 import { useAuth } from "@context/auth/useAuth";
 import {
   uploadChatFile,
+  saveMediaMetaDataAPI,
   sendWebchatMessageAPI,
   getChatHistoryAPI,
 } from "../api/chat";
@@ -93,14 +94,15 @@ export default function ChatArea() {
   useEffect(() => {
     const loadHistory = async () => {
       const token = localStorage.getItem("token") ?? "";
+      const currentMobileNo = user?.mobile_no ?? "";
 
-      setMobileNo(user?.mobile_no ?? "");
-      if (!mobileNo) {
+      if (!currentMobileNo) {
         setIsLoadingHistory(false);
         return;
       }
+      setMobileNo(currentMobileNo);
       try {
-        const response = await getChatHistoryAPI(token, mobileNo);
+        const response = await getChatHistoryAPI(token, currentMobileNo);
 
         if (!response || !response.ok)
           throw new Error("Failed to fetch history");
@@ -142,7 +144,7 @@ export default function ChatArea() {
       }
     };
     loadHistory();
-  }, [mobileNo, user?.mobile_no]);
+  }, [user?.mobile_no]);
 
   // Auto-scroll to bottom only when there are messages
   useEffect(() => {
@@ -292,15 +294,31 @@ export default function ChatArea() {
       let mediaUrl: string | undefined;
 
       // 3. Upload media/image/video first if present, then call API
+      const token = localStorage.getItem("token") ?? "";
       if (currentMedia) {
         try {
-          mediaUrl = await uploadChatFile(mobileNo, currentMedia.file);
+          const { downloadUrl, storagePath, sha256 } = await uploadChatFile(
+            mobileNo,
+            currentMedia.file,
+          );
+          mediaUrl = downloadUrl;
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
-                ? { ...msg, mediaUrl: mediaUrl!, status: "sent" }
+                ? { ...msg, mediaUrl: downloadUrl, status: "sent" }
                 : msg,
             ),
+          );
+          await saveMediaMetaDataAPI(
+            token,
+            mobileNo,
+            currentMedia.file.name.split(".")[0],
+            currentMedia.file.type,
+            storagePath,
+            downloadUrl,
+            sha256,
+            currentMedia.type,
+            finalInput || undefined,
           );
         } catch {
           setMessages((prev) =>
@@ -313,20 +331,36 @@ export default function ChatArea() {
         }
       }
 
-      // Audio upload only — backend has no audio handler yet so skip API call
+      // Audio upload
+      let audioMediaName: string | undefined;
       if (currentAudio) {
         try {
           const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
-          const file = new File([blob], "audio_message.webm", {
+          const audioFile = new File([blob], "audio_message.webm", {
             type: "audio/webm",
           });
-          const finalUrl = await uploadChatFile(mobileNo, file);
+          const { downloadUrl, storagePath, sha256 } = await uploadChatFile(
+            mobileNo,
+            audioFile,
+          );
+          mediaUrl = downloadUrl;
+          audioMediaName = audioFile.name.split(".")[0];
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
-                ? { ...msg, mediaUrl: finalUrl, status: "sent" }
+                ? { ...msg, mediaUrl: downloadUrl, status: "sent" }
                 : msg,
             ),
+          );
+          await saveMediaMetaDataAPI(
+            token,
+            mobileNo,
+            audioMediaName,
+            audioFile.type,
+            storagePath,
+            downloadUrl,
+            sha256,
+            "audio",
           );
         } catch {
           setMessages((prev) =>
@@ -334,14 +368,16 @@ export default function ChatArea() {
               msg.id === messageId ? { ...msg, status: "failed" } : msg,
             ),
           );
+          setIsTyping(false);
+          return;
         }
-        setIsTyping(false);
-        return;
       }
 
       // 4. Call the webchat API (text and/or media)
-      const token = localStorage.getItem("token") ?? "local-storage-auth";
-      const mediaName = currentMedia?.file.name.split(".")[0];
+      const mediaName = currentAudio
+        ? audioMediaName
+        : currentMedia?.file.name.split(".")[0];
+      const mediaType = currentAudio ? "audio" : currentMedia?.type;
 
       const response = await sendWebchatMessageAPI(
         token,
@@ -349,6 +385,7 @@ export default function ChatArea() {
         finalInput || undefined,
         mediaUrl,
         mediaName,
+        mediaType,
       );
 
       if (!response || !response.ok) {
