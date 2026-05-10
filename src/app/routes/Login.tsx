@@ -1,12 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Phone,
-  CheckCircle,
-  Leaf,
-  Loader2,
-  ArrowRight,
-} from "lucide-react";
+import { Phone, CheckCircle, Leaf, Loader2, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { generateOTPAPI, verifyOTPAPI } from "@features/auth/api/auth";
 import { useAuth } from "@context/auth/useAuth";
@@ -64,7 +58,10 @@ export default function Login() {
   };
 
   const handleDigitPaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
     if (pasted.length === 6) {
       setOtpValues(pasted.split(""));
       otpBoxRefs.current[5]?.focus();
@@ -106,7 +103,7 @@ export default function Login() {
       const response = await verifyOTPAPI(mobileNo, otp);
       if (response && response.ok) {
         await login(mobileNo);
-        navigate("/weather");
+        navigate("/chat");
       } else {
         setError("Invalid OTP. Please try again.");
         setOtpValues(["", "", "", "", "", ""]);
@@ -132,7 +129,14 @@ export default function Login() {
           {/* Decorative circles */}
           <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/5" />
-          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
 
           <div className="relative z-10 flex flex-col items-center space-y-4 text-center">
             <div className="w-16 h-16 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/25 shadow-lg">
@@ -319,8 +323,7 @@ export default function Login() {
             <p className="font-label text-xs text-on-surface-variant">
               By continuing, you agree to PadiPro's{" "}
               <span className="text-primary font-bold">Terms of Service</span>{" "}
-              and{" "}
-              <span className="text-primary font-bold">Privacy Policy</span>
+              and <span className="text-primary font-bold">Privacy Policy</span>
             </p>
           </footer>
         </section>
