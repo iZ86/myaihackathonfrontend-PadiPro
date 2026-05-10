@@ -29,10 +29,42 @@ export async function uploadFileToStorage(uploadUrl: string, file: File): Promis
   }
 }
 
-export async function uploadChatFile(mobileNo: string, file: File): Promise<string> {
-  const { uploadUrl, downloadUrl } = await getUploadUrl(mobileNo, file.name, file.type);
-  await uploadFileToStorage(uploadUrl, file);
-  return downloadUrl;
+async function computeSHA256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export async function uploadChatFile(mobileNo: string, file: File): Promise<{ downloadUrl: string; storagePath: string; sha256: string; }> {
+  const { uploadUrl, downloadUrl, storagePath } = await getUploadUrl(mobileNo, file.name.split(".")[0], file.type);
+  const [, sha256] = await Promise.all([
+    uploadFileToStorage(uploadUrl, file),
+    computeSHA256(file),
+  ]);
+  return { downloadUrl, storagePath, sha256 };
+}
+
+export async function saveMediaMetaDataAPI(
+  token: string,
+  mobileNo: string,
+  fileName: string,
+  mimeType: string,
+  storagePath: string,
+  downloadUrl: string,
+  sha256: string,
+  fileType: 'image' | 'audio' | 'video',
+  caption?: string,
+): Promise<void> {
+  await fetch(`${backendServerConfig.backendServerUrl}/webchat/media/${mobileNo}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fileName, mimeType, storagePath, downloadUrl, caption: caption ?? '', sha256, fileType }),
+  });
 }
 
 export const sendWebchatMessageAPI = async (
