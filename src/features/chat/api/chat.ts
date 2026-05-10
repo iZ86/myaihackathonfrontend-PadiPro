@@ -1,6 +1,6 @@
 import { backendServerConfig } from "@config/config";
 
-export async function getUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<{ uploadUrl: string; downloadUrl: string; }> {
+export async function getUploadUrl(mobileNo: string, fileName: string, contentType: string): Promise<{ uploadUrl: string; downloadUrl: string; storagePath: string; }> {
   const res = await fetch(`${backendServerConfig.backendServerUrl}/webchat/upload/url/${mobileNo}`, {
     method: 'POST',
     body: JSON.stringify({
@@ -73,6 +73,7 @@ export const sendWebchatMessageAPI = async (
   message?: string,
   mediaUrl?: string,
   mediaName?: string,
+  mediaType?: 'image' | 'video' | 'audio',
 ): Promise<Response | undefined> => {
   try {
     return await fetch(`${backendServerConfig.backendServerUrl}/chat/webchat`, {
@@ -86,6 +87,7 @@ export const sendWebchatMessageAPI = async (
         message,
         media_url: mediaUrl,
         media_name: mediaName,
+        media_type: mediaType,
         created_by: 'WEBCHAT',
       }),
       mode: 'cors',
