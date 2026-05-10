@@ -16,13 +16,13 @@ import { useLanguage } from "@context/lang/useLanguage";
 
 const SCIENTIFIC_NAMES: Record<string, string> = {
   "BROWN SPOT": "Bipolaris oryzae",
-  "BLAST": "Magnaporthe oryzae",
+  BLAST: "Magnaporthe oryzae",
   "BACTERIAL BLIGHT": "Xanthomonas oryzae pv. oryzae",
   "SHEATH BLIGHT": "Rhizoctonia solani",
   "STEM ROT": "Sclerotium oryzae",
-  "TUNGRO": "Rice tungro virus complex",
+  TUNGRO: "Rice tungro virus complex",
   "NARROW BROWN LEAF SPOT": "Cercospora janseana",
-  "HEALTHY": "Oryza sativa",
+  HEALTHY: "Oryza sativa",
 };
 
 const toNum = (v: unknown): number => {
@@ -116,8 +116,7 @@ export default function HistoryCard() {
 
       const isHighRisk = detection.severity > 0.5;
       const diseaseName =
-        detection.disease.charAt(0) +
-        detection.disease.slice(1).toLowerCase();
+        detection.disease.charAt(0) + detection.disease.slice(1).toLowerCase();
 
       return {
         title: diseaseName,
@@ -179,7 +178,8 @@ export default function HistoryCard() {
     if (activeFilter === "all") return true;
     if (activeFilter === "healthy")
       return detections.some((d) => d.disease === "HEALTHY");
-    if (activeFilter === "high") return detections.some((d) => d.severity > 0.5);
+    if (activeFilter === "high")
+      return detections.some((d) => d.severity > 0.5);
     return true;
   });
 
@@ -241,7 +241,7 @@ export default function HistoryCard() {
         >
           {t.history.syncInterrupted}
         </h2>
-        <p className="text-sm max-w-[240px]" style={{ color: "#707973" }}>
+        <p className="text-sm max-w-60" style={{ color: "#707973" }}>
           {error || t.history.noRecords}
         </p>
         <button
@@ -415,8 +415,8 @@ export default function HistoryCard() {
       <div className="space-y-4">
         {filteredItems.map((item, index) => {
           // Primary detection = highest severity (used for navigation)
-          const primaryDetection = item.detections.reduce((worst, d) =>
-            d.severity > worst.severity ? d : worst,
+          const primaryDetection = item.detections.reduce(
+            (worst, d) => (d.severity > worst.severity ? d : worst),
             item.detections[0],
           );
 
@@ -431,7 +431,11 @@ export default function HistoryCard() {
               initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.45, delay: index * 0.06, ease: "easeOut" }}
+              transition={{
+                duration: 0.45,
+                delay: index * 0.06,
+                ease: "easeOut",
+              }}
               whileHover={{ boxShadow: "0 12px 40px rgba(15,82,56,0.1)" }}
               className="rounded-3xl overflow-hidden transition-all cursor-pointer"
               style={{ backgroundColor: "#fff", border: "1px solid #e5e2dc" }}
@@ -459,7 +463,7 @@ export default function HistoryCard() {
                   />
                 </div>
                 <p
-                  className="text-[10px] font-bold uppercase tracking-[0.1em]"
+                  className="text-[10px] font-bold uppercase tracking-widest"
                   style={{
                     color: "#9ca3af",
                     fontFamily: "'Manrope', sans-serif",
@@ -555,9 +559,16 @@ export default function HistoryCard() {
                             initial={{ width: 0 }}
                             whileInView={{ width: `${confidencePct}%` }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.9, delay: 0.2 + di * 0.1, ease: "easeOut" }}
+                            transition={{
+                              duration: 0.9,
+                              delay: 0.2 + di * 0.1,
+                              ease: "easeOut",
+                            }}
                             className="h-full rounded-full"
-                            style={{ background: "linear-gradient(90deg,#0f5238,#2d6a4f)" }}
+                            style={{
+                              background:
+                                "linear-gradient(90deg,#0f5238,#2d6a4f)",
+                            }}
                           />
                         </div>
                       </div>
@@ -592,7 +603,11 @@ export default function HistoryCard() {
                             initial={{ width: 0 }}
                             whileInView={{ width: `${severityPct}%` }}
                             viewport={{ once: true }}
-                            transition={{ duration: 0.9, delay: 0.32 + di * 0.1, ease: "easeOut" }}
+                            transition={{
+                              duration: 0.9,
+                              delay: 0.32 + di * 0.1,
+                              ease: "easeOut",
+                            }}
                             className="h-full rounded-full"
                             style={{ background: meta.severityColor }}
                           />
