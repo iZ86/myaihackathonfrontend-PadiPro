@@ -73,7 +73,7 @@ export const sendWebchatMessageAPI = async (
   message?: string,
   mediaUrl?: string,
   mediaName?: string,
-  mediaType?: 'image' | 'video' | 'audio',
+  mediaType?: 'image' | 'video' | 'audio' | 'text',
 ): Promise<Response | undefined> => {
   try {
     return await fetch(`${backendServerConfig.backendServerUrl}/chat/webchat`, {

@@ -271,7 +271,7 @@ export default function ChatArea() {
       id: messageId,
       role: "user",
       type: messageType,
-      content: messageType === "text" ? finalInput : "",
+      content: finalInput,
       mediaUrl: messageType !== "text" ? initialContent : undefined,
       mediaName: media?.file.name,
       status: messageType !== "text" ? "sending" : "sent",
@@ -377,7 +377,7 @@ export default function ChatArea() {
       const mediaName = currentAudio
         ? audioMediaName
         : currentMedia?.file.name.split(".")[0];
-      const mediaType = currentAudio ? "audio" : currentMedia?.type;
+      const mediaType = currentAudio ? "audio" : (currentMedia?.type ?? "text");
 
       const response = await sendWebchatMessageAPI(
         token,
@@ -632,14 +632,14 @@ export default function ChatArea() {
                             isUser
                               ? "bg-primary text-on-primary rounded-tr-sm hover:shadow-lg hover:shadow-primary/15"
                               : "bg-white text-on-surface border border-surface-container/70 rounded-tl-sm hover:shadow-md hover:shadow-black/5"
-                          } ${msg.status === "sending" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-1 ring-error/20" : ""}`}
+                          } ${msg.status === "sending" && msg.type !== "image" && msg.type !== "video" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-1 ring-error/20" : ""}`}
                         >
                           {msg.type === "image" && (
                             <>
                               <div
-                                className="relative group/img cursor-zoom-in"
+                                className={`relative group/img ${msg.status !== "sending" ? "cursor-zoom-in" : "cursor-default"}`}
                                 onClick={() =>
-                                  setLightboxSrc(msg.mediaUrl ?? "")
+                                  msg.status !== "sending" && setLightboxSrc(msg.mediaUrl ?? "")
                                 }
                               >
                                 <img
@@ -647,15 +647,22 @@ export default function ChatArea() {
                                   className="w-full max-h-72 object-cover block"
                                   alt="Shared image"
                                 />
-                                <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/15 transition-colors flex items-center justify-center">
-                                  <Maximize2
-                                    className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
-                                    size={24}
-                                  />
-                                </div>
+                                {msg.status === "sending" ? (
+                                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                                    <Loader2 className="text-white animate-spin" size={28} />
+                                    <span className="text-white/80 text-xs font-semibold">Uploading…</span>
+                                  </div>
+                                ) : (
+                                  <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/15 transition-colors flex items-center justify-center">
+                                    <Maximize2
+                                      className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
+                                      size={24}
+                                    />
+                                  </div>
+                                )}
                               </div>
                               {msg.content && (
-                                <p className="px-3 py-2 text-sm whitespace-pre-wrap">
+                                <p className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
                                   {msg.content}
                                 </p>
                               )}
@@ -663,13 +670,21 @@ export default function ChatArea() {
                           )}
                           {msg.type === "video" && (
                             <>
-                              <video
-                                src={msg.mediaUrl}
-                                controls
-                                className="w-full max-h-72 block"
-                              />
+                              <div className="relative">
+                                <video
+                                  src={msg.mediaUrl}
+                                  controls={msg.status !== "sending"}
+                                  className="w-full max-h-72 block"
+                                />
+                                {msg.status === "sending" && (
+                                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 pointer-events-none">
+                                    <Loader2 className="text-white animate-spin" size={28} />
+                                    <span className="text-white/80 text-xs font-semibold">Uploading…</span>
+                                  </div>
+                                )}
+                              </div>
                               {msg.content && (
-                                <p className="px-3 py-2 text-sm whitespace-pre-wrap">
+                                <p className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
                                   {msg.content}
                                 </p>
                               )}
