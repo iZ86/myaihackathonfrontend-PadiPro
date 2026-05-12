@@ -144,7 +144,7 @@ const TREATMENT_DAYS: Record<Language, TreatmentDay[]> = {
       note: "Lorem ipsum dolor sit amet. Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus, omnis voluptas assumenda est.",
     },
   ],
-  ms: [
+  bm: [
     {
       day: 1,
       title: "Penilaian Awal & Dokumentasi",
@@ -256,7 +256,7 @@ const TREATMENT_DAYS: Record<Language, TreatmentDay[]> = {
 const formatDate = (isoString: string, language: Language) => {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString(language === "ms" ? "ms-MY" : "en-US", {
+    return date.toLocaleDateString(language === "bm" ? "ms-MY" : "en-US", {
       weekday: "long",
       month: "long",
       day: "2-digit",
@@ -282,11 +282,11 @@ const getDetectionMeta = (
   const isUnknown = d.disease === "Unknown";
 
   const name = isHealthy
-    ? language === "ms"
+    ? language === "bm"
       ? "Tanaman Sihat"
       : "Healthy Crop"
     : isUnknown
-      ? language === "ms"
+      ? language === "bm"
         ? "Tidak Diketahui"
         : "Unknown"
       : d.disease.charAt(0) + d.disease.slice(1).toLowerCase();
@@ -295,18 +295,18 @@ const getDetectionMeta = (
     SCIENTIFIC_NAMES[d.disease.toUpperCase()] || "Species undetermined";
 
   const riskLabel = isHealthy
-    ? language === "ms"
+    ? language === "bm"
       ? "SIHAT"
       : "HEALTHY"
     : isUnknown
-      ? language === "ms"
+      ? language === "bm"
         ? "TIDAK DIKETAHUI"
         : "UNKNOWN"
       : isHighRisk
-        ? language === "ms"
+        ? language === "bm"
           ? "RISIKO TINGGI"
           : "HIGH RISK"
-        : language === "ms"
+        : language === "bm"
           ? "SEDERHANA"
           : "MODERATE";
 
@@ -400,7 +400,7 @@ export default function HistoryDetailCard({ item }: Props) {
           {t.historyDetail.treatmentLabel}
           <br />
           <span style={{ color: "#0f5238" }}>
-            {language === "ms" ? "Pelan" : "Plan"}
+            {language === "bm" ? "Pelan" : "Plan"}
           </span>
         </h1>
         <p className="text-sm mt-2" style={{ color: "#707973" }}>

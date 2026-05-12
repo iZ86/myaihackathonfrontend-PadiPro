@@ -103,7 +103,7 @@ export default function WeatherForecast() {
     date: { year: number; month: number; day: number },
     index: number,
   ) => {
-    if (language === "ms") {
+    if (language === "bm") {
       if (index === 0) return "Hari Ini";
       if (index === 1) return "Esok";
       const days = ["Ahad", "Isn", "Sel", "Rab", "Kha", "Jum", "Sab"];
@@ -260,10 +260,10 @@ export default function WeatherForecast() {
         <div className="bg-white/50 p-4 rounded-2xl space-y-3">
           <p className="text-on-surface-variant text-xs leading-relaxed font-medium">
             {currentDay.daytimeForecast.relativeHumidity > 75
-              ? language === "ms"
+              ? language === "bm"
                 ? `Kelembapan melampau dikesan (${currentDay.daytimeForecast.relativeHumidity}%). Risiko tinggi penyakit hawar selaput. Disyorkan pengawasan racun kulat segera.`
                 : `Extreme humidity detected (${currentDay.daytimeForecast.relativeHumidity}%). High risk of sheath blight. Recommend urgent fungicidal surveillance.`
-              : language === "ms"
+              : language === "bm"
                 ? "Tahap kelembapan ideal untuk pertumbuhan tanaman fisiologi. Pengambilan nutrien pada masa ini adalah optimum."
                 : "Ideal humidity levels for physiological crop growth. Nutrient uptake is currently optimal."}
           </p>
@@ -271,10 +271,10 @@ export default function WeatherForecast() {
             <AlertCircle className="w-3.5 h-3.5" />
             <span>
               {currentDay.daytimeForecast.precipitation.probability.percent > 50
-                ? language === "ms"
+                ? language === "bm"
                   ? "Amaran Cuaca: Tangguhkan penyemburan segera"
                   : "Weather Warning: Postpone immediate spraying"
-                : language === "ms"
+                : language === "bm"
                   ? "Cuaca Stabil: Tempoh pembajaan nitrogen yang sesuai"
                   : "Weather Stable: Perfect nitrogen window"}
             </span>
