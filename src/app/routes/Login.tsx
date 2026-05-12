@@ -269,7 +269,7 @@ export default function Login() {
                           value={val}
                           onChange={(e) => handleDigitChange(i, e.target.value)}
                           onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                          className={`w-12 h-14 text-center text-2xl font-bold font-mono rounded-xl border-2 outline-none transition-all focus:scale-105 ${
+                          className={`flex-1 min-w-0 h-14 text-center text-xl font-bold font-mono rounded-xl border-2 outline-none transition-all focus:scale-105 ${
                             val
                               ? "border-primary bg-primary/5 text-primary"
                               : "border-surface-container-high bg-surface-container-low text-on-surface"
