@@ -1,7 +1,7 @@
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
-  type: 'text' | 'image' | 'video' | 'audio';
+  type: 'text' | 'image' | 'video' | 'audio' | 'document';
   content: string; // text content (caption for media messages, empty string if none)
   status: 'sending' | 'sent' | 'failed';
   timestamp: Date;

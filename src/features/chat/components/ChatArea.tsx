@@ -19,6 +19,8 @@ import {
   Check,
   Maximize2,
   Download,
+  FileText,
+  ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
@@ -59,8 +61,12 @@ export default function ChatArea() {
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
+  const isNearBottom = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -110,10 +116,12 @@ export default function ChatArea() {
         const json = await response.json();
 
         if (json.success && Array.isArray(json.data)) {
-          const detectType = (url: string): Message["type"] => {
+          const detectType = (mediaType?: string, url?: string): Message["type"] => {
+            if (mediaType === "document") return "document";
+            if (mediaType === "video" || url?.includes("/videos/")) return "video";
+            if (mediaType === "audio" || url?.includes("/audios/")) return "audio";
+            if (mediaType === "image") return "image";
             if (!url) return "text";
-            if (url.includes("/videos/")) return "video";
-            if (url.includes("/audios/")) return "audio";
             return "image";
           };
 
@@ -123,17 +131,25 @@ export default function ChatArea() {
               message: string;
               media_url?: string;
               media_name?: string;
+              media_type?: string;
+              base64_url?: string;
               timestamp: { _seconds: number; _nanoseconds: number };
-            }) => ({
-              id: crypto.randomUUID(),
-              role: item.role === "model" ? "assistant" : "user",
-              type: detectType(item.media_url ?? ""),
-              content: item.message ?? "",
-              mediaUrl: item.media_url || undefined,
-              mediaName: item.media_name || undefined,
-              status: "sent" as const,
-              timestamp: new Date(item.timestamp._seconds * 1000),
-            }),
+            }) => {
+              const type = detectType(item.media_type, item.media_url);
+              const mediaUrl =
+                item.media_url ||
+                (item.base64_url ? `data:image/png;base64,${item.base64_url}` : undefined);
+              return {
+                id: crypto.randomUUID(),
+                role: item.role === "model" ? "assistant" : "user",
+                type,
+                content: type === "document" ? "" : (item.message ?? ""),
+                mediaUrl,
+                mediaName: item.media_name || undefined,
+                status: "sent" as const,
+                timestamp: new Date(item.timestamp._seconds * 1000),
+              };
+            },
           );
           setMessages(history);
         }
@@ -146,15 +162,24 @@ export default function ChatArea() {
     loadHistory();
   }, [user?.mobile_no]);
 
-  // Auto-scroll to bottom only when there are messages
+  // Auto-scroll: instant on initial load, smooth only when near bottom
   useEffect(() => {
-    if (scrollRef.current && (messages.length > 0 || isTyping)) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+    if (isLoadingHistory) return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (!initialScrollDone.current) {
+      el.scrollTop = el.scrollHeight;
+      initialScrollDone.current = true;
+      isNearBottom.current = true;
+      setShowScrollToBottom(false);
+      return;
     }
-  }, [messages, isTyping]);
+
+    if (isNearBottom.current) {
+      bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isTyping, isLoadingHistory]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -163,6 +188,26 @@ export default function ChatArea() {
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
     }
   }, [input]);
+
+  // Track whether user is near the bottom; show/hide scroll-to-bottom button
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      const near = distanceFromBottom < 150;
+      isNearBottom.current = near;
+      setShowScrollToBottom(!near);
+    };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
+    isNearBottom.current = true;
+    setShowScrollToBottom(false);
+  };
 
   const processFile = (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -397,15 +442,38 @@ export default function ChatArea() {
       // 5. Render assistant messages
       if (json.success && json.data?.messages) {
         const assistantMessages: Message[] = json.data.messages.map(
-          (msg: { message: string; type: string; document_url?: string }) => ({
-            id: crypto.randomUUID(),
-            role: "assistant" as const,
-            type: "text" as const,
-            content: msg.message,
-            status: "sent" as const,
-            timestamp: new Date(),
-            document_url: msg.document_url,
-          }),
+          (msg: { message: string; type: string; document_url?: string; base64_url?: string }) => {
+            if (msg.document_url) {
+              return {
+                id: crypto.randomUUID(),
+                role: "assistant" as const,
+                type: "document" as const,
+                content: "",
+                mediaUrl: msg.document_url,
+                status: "sent" as const,
+                timestamp: new Date(),
+              };
+            }
+            if (msg.base64_url) {
+              return {
+                id: crypto.randomUUID(),
+                role: "assistant" as const,
+                type: "image" as const,
+                content: "",
+                mediaUrl: `data:image/png;base64,${msg.base64_url}`,
+                status: "sent" as const,
+                timestamp: new Date(),
+              };
+            }
+            return {
+              id: crypto.randomUUID(),
+              role: "assistant" as const,
+              type: "text" as const,
+              content: msg.message,
+              status: "sent" as const,
+              timestamp: new Date(),
+            };
+          },
         );
         setMessages((prev) => [...prev, ...assistantMessages]);
       } else {
@@ -502,7 +570,7 @@ export default function ChatArea() {
       {/* Chat Messages */}
       <div
         ref={scrollRef}
-        className="grow overflow-y-auto no-scrollbar scroll-smooth"
+        className="grow overflow-y-auto no-scrollbar"
       >
         <div className="max-w-3xl mx-auto w-full px-4 pt-2 pb-48 md:pb-36">
           <AnimatePresence initial={false}>
@@ -632,7 +700,7 @@ export default function ChatArea() {
                       </div>
                       <div
                         className={`flex flex-col gap-1 ${
-                          msg.type === "image" || msg.type === "video"
+                          msg.type === "image" || msg.type === "video" || msg.type === "document"
                             ? "w-[75%]"
                             : "max-w-[80%] sm:max-w-[72%]"
                         } ${isUser ? "items-end" : "items-start"}`}
@@ -718,6 +786,34 @@ export default function ChatArea() {
                                 </p>
                               )}
                             </>
+                          )}
+                          {msg.type === "document" && msg.mediaUrl && (
+                            <a
+                              href={msg.mediaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block group/doc"
+                            >
+                              <div className="w-full h-28 bg-primary/8 flex flex-col items-center justify-center gap-2 relative">
+                                <FileText size={40} className="text-primary/50 group-hover/doc:text-primary transition-colors" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">
+                                  Solution Plan
+                                </span>
+                                <div className="absolute inset-0 bg-black/0 group-hover/doc:bg-black/5 transition-colors flex items-center justify-center">
+                                  <div className="opacity-0 group-hover/doc:opacity-100 transition-opacity bg-primary text-white rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold shadow-lg">
+                                    <Download size={13} />
+                                    Download
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`px-3 py-2 flex items-center gap-2 border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
+                                <FileText size={13} className="text-primary shrink-0" />
+                                <span className="text-xs font-semibold text-on-surface-variant truncate flex-1">
+                                  {msg.mediaName ? `${msg.mediaName.slice(0, 16)}….docx` : "solution-plan.docx"}
+                                </span>
+                                <Download size={13} className="text-primary shrink-0" />
+                              </div>
+                            </a>
                           )}
                           {msg.type === "audio" && msg.mediaUrl && (
                             <AudioPlayer
@@ -824,8 +920,26 @@ export default function ChatArea() {
               </div>
             </motion.div>
           )}
+          <div ref={bottomAnchorRef} />
         </div>
       </div>
+
+      {/* Scroll to Bottom Button */}
+      <AnimatePresence>
+        {showScrollToBottom && (
+          <motion.button
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            onClick={scrollToBottom}
+            className="fixed bottom-32 md:bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white border border-surface-container/80 shadow-lg shadow-black/10 rounded-full pl-3 pr-4 py-2 flex items-center gap-1.5 text-xs font-bold text-on-surface hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer"
+          >
+            <ChevronDown size={15} />
+            Scroll to bottom
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Fixed Input Area */}
       <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-6 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/95 to-transparent pointer-events-none z-50">
