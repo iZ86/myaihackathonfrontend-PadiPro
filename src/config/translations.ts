@@ -131,7 +131,7 @@ export const translations = {
       s_advice: "General farming advice"
     }
   },
-  ms: {
+  bm: {
     common: {
       loading: "Memuatkan...",
       error: "Ralat",
@@ -265,5 +265,5 @@ export const translations = {
   }
 };
 
-export type Language = 'en' | 'ms';
+export type Language = 'en' | 'bm';
 export type TranslationKeys = typeof translations.en;

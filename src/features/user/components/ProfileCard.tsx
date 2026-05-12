@@ -16,6 +16,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@context/auth/useAuth";
 import { useLanguage } from "@context/lang/useLanguage";
 import { useLocationPermission } from "@context/location/useLocationPermission";
+import { updateUserLangByMobileNoAPI } from "@features/user/api/users";
+import type { Language } from "@config/translations";
 
 export default function ProfileCard() {
   const { language, setLanguage, t } = useLanguage();
@@ -35,6 +37,14 @@ export default function ProfileCard() {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleLanguageChange = async (lang: Language) => {
+    setLanguage(lang);
+    if (user?.mobile_no) {
+      const apiLang = lang === "en" ? "EN" : "BM";
+      await updateUserLangByMobileNoAPI(user.mobile_no, apiLang, "WEBCHAT");
+    }
   };
 
   if (loading) {
@@ -143,7 +153,9 @@ export default function ProfileCard() {
             {isLocationLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                {hasLocationPermission ? t.profile.updating : t.profile.requesting}
+                {hasLocationPermission
+                  ? t.profile.updating
+                  : t.profile.requesting}
               </>
             ) : hasLocationPermission ? (
               <>
@@ -206,16 +218,16 @@ export default function ProfileCard() {
               </div>
               <div className="flex bg-surface-container rounded-lg p-1">
                 <button
-                  onClick={() => setLanguage("en")}
+                  onClick={() => handleLanguageChange("en")}
                   className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${language === "en" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
                 >
                   EN
                 </button>
                 <button
-                  onClick={() => setLanguage("ms")}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${language === "ms" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
+                  onClick={() => handleLanguageChange("bm")}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${language === "bm" ? "bg-primary text-white shadow-sm" : "text-on-surface-variant"}`}
                 >
-                  MS
+                  BM
                 </button>
               </div>
             </div>

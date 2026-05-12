@@ -46,3 +46,21 @@ export const getDiagnosisHistoryAPI = async (token: string, mobileNo: string): P
     console.error(err);
   }
 };
+
+export async function updateUserLangByMobileNoAPI(mobileNo: string, lang: 'BM' | 'EN', type: string): Promise<Response | undefined> {
+  try {
+    return await fetch(`${backendServerConfig.backendServerUrl}/users/${mobileNo}/lang`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        lang,
+        type,
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+
+}
