@@ -45,6 +45,14 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES];
 
+const THINKING_PHRASES = [
+  "Analyzing your request…",
+  "Checking disease database…",
+  "Generating response…",
+  "Processing plant data…",
+  "Consulting agronomy knowledge…",
+];
+
 export default function ChatArea() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -55,6 +63,7 @@ export default function ChatArea() {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [mobileNo, setMobileNo] = useState(user?.mobile_no ?? "");
+  const [typingPhraseIdx, setTypingPhraseIdx] = useState(0);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
@@ -67,6 +76,7 @@ export default function ChatArea() {
   const bottomAnchorRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
   const isNearBottom = useRef(true);
+  const historyCountRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -101,7 +111,6 @@ export default function ChatArea() {
     const loadHistory = async () => {
       const token = localStorage.getItem("token") ?? "";
       const currentMobileNo = user?.mobile_no ?? "";
-
       if (!currentMobileNo) {
         setIsLoadingHistory(false);
         return;
@@ -109,22 +118,23 @@ export default function ChatArea() {
       setMobileNo(currentMobileNo);
       try {
         const response = await getChatHistoryAPI(token, currentMobileNo);
-
         if (!response || !response.ok)
           throw new Error("Failed to fetch history");
-
         const json = await response.json();
-
         if (json.success && Array.isArray(json.data)) {
-          const detectType = (mediaType?: string, url?: string): Message["type"] => {
+          const detectType = (
+            mediaType?: string,
+            url?: string,
+          ): Message["type"] => {
             if (mediaType === "document") return "document";
-            if (mediaType === "video" || url?.includes("/videos/")) return "video";
-            if (mediaType === "audio" || url?.includes("/audios/")) return "audio";
+            if (mediaType === "video" || url?.includes("/videos/"))
+              return "video";
+            if (mediaType === "audio" || url?.includes("/audios/"))
+              return "audio";
             if (mediaType === "image") return "image";
             if (!url) return "text";
             return "image";
           };
-
           const history: Message[] = json.data.map(
             (item: {
               role: string;
@@ -138,7 +148,9 @@ export default function ChatArea() {
               const type = detectType(item.media_type, item.media_url);
               const mediaUrl =
                 item.media_url ||
-                (item.base64_url ? `data:image/png;base64,${item.base64_url}` : undefined);
+                (item.base64_url
+                  ? `data:image/png;base64,${item.base64_url}`
+                  : undefined);
               return {
                 id: crypto.randomUUID(),
                 role: item.role === "model" ? "assistant" : "user",
@@ -151,6 +163,7 @@ export default function ChatArea() {
               };
             },
           );
+          historyCountRef.current = history.length;
           setMessages(history);
         }
       } catch (err) {
@@ -167,7 +180,6 @@ export default function ChatArea() {
     if (isLoadingHistory) return;
     const el = scrollRef.current;
     if (!el) return;
-
     if (!initialScrollDone.current) {
       el.scrollTop = el.scrollHeight;
       initialScrollDone.current = true;
@@ -175,7 +187,6 @@ export default function ChatArea() {
       setShowScrollToBottom(false);
       return;
     }
-
     if (isNearBottom.current) {
       bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
     }
@@ -189,12 +200,13 @@ export default function ChatArea() {
     }
   }, [input]);
 
-  // Track whether user is near the bottom; show/hide scroll-to-bottom button
+  // Track near-bottom for scroll button
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     const handleScroll = () => {
-      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      const distanceFromBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight;
       const near = distanceFromBottom < 150;
       isNearBottom.current = near;
       setShowScrollToBottom(!near);
@@ -202,6 +214,19 @@ export default function ChatArea() {
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Cycle thinking phrases while AI responds
+  useEffect(() => {
+    if (!isTyping) {
+      setTypingPhraseIdx(0);
+      return;
+    }
+    const id = setInterval(
+      () => setTypingPhraseIdx((p) => (p + 1) % THINKING_PHRASES.length),
+      1800,
+    );
+    return () => clearInterval(id);
+  }, [isTyping]);
 
   const scrollToBottom = () => {
     bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -218,7 +243,6 @@ export default function ChatArea() {
       alert(`File size must be under ${MAX_FILE_SIZE_MB}MB.`);
       return;
     }
-
     const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type);
     const previewUrl = URL.createObjectURL(file);
     setMedia({
@@ -235,22 +259,16 @@ export default function ChatArea() {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          audioChunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorder.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         setAudioURL(URL.createObjectURL(blob));
       };
-
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingDuration(0);
-
       timerIntervalRef.current = setInterval(() => {
         setRecordingDuration((prev) => {
           if (prev >= 59) {
@@ -273,9 +291,7 @@ export default function ChatArea() {
         .getTracks()
         .forEach((track) => track.stop());
       setIsRecording(false);
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     }
   };
 
@@ -296,7 +312,6 @@ export default function ChatArea() {
 
     const messageId = crypto.randomUUID();
     const timestamp = new Date();
-
     let messageType: Message["type"];
     let initialContent: string;
 
@@ -311,7 +326,6 @@ export default function ChatArea() {
       initialContent = finalInput;
     }
 
-    // 1. Optimistic UI update
     const optimisticMessage: Message = {
       id: messageId,
       role: "user",
@@ -324,7 +338,6 @@ export default function ChatArea() {
     };
     setMessages((prev) => [...prev, optimisticMessage]);
 
-    // 2. Clear state
     setInput("");
     const currentMedia = media;
     const currentAudio = audioURL;
@@ -332,14 +345,12 @@ export default function ChatArea() {
     setMedia(null);
     setAudioURL(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
-
     setIsTyping(true);
 
     try {
       let mediaUrl: string | undefined;
-
-      // 3. Upload media/image/video first if present, then call API
       const token = localStorage.getItem("token") ?? "";
+
       if (currentMedia) {
         try {
           const { downloadUrl, storagePath, sha256 } = await uploadChatFile(
@@ -376,7 +387,6 @@ export default function ChatArea() {
         }
       }
 
-      // Audio upload
       let audioMediaName: string | undefined;
       if (currentAudio) {
         try {
@@ -418,12 +428,10 @@ export default function ChatArea() {
         }
       }
 
-      // 4. Call the webchat API (text and/or media)
       const mediaName = currentAudio
         ? audioMediaName
         : currentMedia?.file.name.split(".")[0];
       const mediaType = currentAudio ? "audio" : (currentMedia?.type ?? "text");
-
       const response = await sendWebchatMessageAPI(
         token,
         mobileNo,
@@ -433,17 +441,18 @@ export default function ChatArea() {
         mediaType,
       );
 
-      if (!response || response.status === 500) {
-        throw new Error("Server error");
-      }
-
+      if (!response || response.status === 500) throw new Error("Server error");
       const json = await response.json();
 
-      // 5. Render assistant messages
       if (json.success && json.data?.messages) {
         const assistantMessages: Message[] = json.data.messages.map(
-          (msg: { message: string; type: string; document_url?: string; base64_url?: string }) => {
-            if (msg.document_url) {
+          (msg: {
+            message: string;
+            type: string;
+            document_url?: string;
+            base64_url?: string;
+          }) => {
+            if (msg.document_url)
               return {
                 id: crypto.randomUUID(),
                 role: "assistant" as const,
@@ -453,8 +462,7 @@ export default function ChatArea() {
                 status: "sent" as const,
                 timestamp: new Date(),
               };
-            }
-            if (msg.base64_url) {
+            if (msg.base64_url)
               return {
                 id: crypto.randomUUID(),
                 role: "assistant" as const,
@@ -464,7 +472,6 @@ export default function ChatArea() {
                 status: "sent" as const,
                 timestamp: new Date(),
               };
-            }
             return {
               id: crypto.randomUUID(),
               role: "assistant" as const,
@@ -512,7 +519,7 @@ export default function ChatArea() {
 
   return (
     <div
-      className={`flex flex-col h-full relative overflow-hidden transition-colors ${isDragging ? "bg-primary/5" : ""}`}
+      className={`flex flex-col h-full relative overflow-hidden transition-colors duration-300 ${isDragging ? "ring-2 ring-primary/25 ring-inset bg-primary/3" : ""}`}
       onDragOver={(e) => {
         e.preventDefault();
         setIsDragging(true);
@@ -536,8 +543,10 @@ export default function ChatArea() {
             onClick={() => setLightboxSrc(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={{ scale: 0.88, y: 24, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
               className="relative max-w-full max-h-full"
             >
               <img
@@ -558,168 +567,262 @@ export default function ChatArea() {
         )}
       </AnimatePresence>
 
-      {/* Subtle Background Pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
-        }}
-      />
+      {/* Atmospheric background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-primary/7 rounded-full blur-[72px]" />
+        <div className="absolute top-1/3 -left-20 w-64 h-64 bg-blue-400/5 rounded-full blur-[60px]" />
+        <div className="absolute -bottom-12 right-1/4 w-72 h-48 bg-emerald-200/4 rounded-full blur-[56px]" />
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "128px 128px",
+          }}
+        />
+      </div>
 
-      {/* Chat Messages */}
+      {/* Chat messages scroll area */}
       <div
         ref={scrollRef}
-        className="grow overflow-y-auto no-scrollbar"
+        className="grow overflow-y-auto no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))]"
       >
         <div className="max-w-3xl mx-auto w-full px-4 pt-2 pb-48 md:pb-36">
           <AnimatePresence initial={false}>
+            {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
               <motion.div
+                key="skeleton"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center pt-24 gap-4"
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4 pt-4"
               >
-                <div className="w-10 h-10 rounded-2xl bg-surface-container-low border border-surface-container flex items-center justify-center shadow-lg">
-                  <Bot size={20} className="text-on-surface-variant/40" />
-                </div>
-                <div className="flex gap-1.5">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.5,
-                        delay: i * 0.2,
-                      }}
-                      className="w-1.5 h-1.5 rounded-full bg-surface-container-high"
-                    />
-                  ))}
-                </div>
-                <span className="text-[10px] font-black text-on-surface-variant/30 uppercase tracking-[0.2em]">
-                  Loading history…
-                </span>
+                {(
+                  [
+                    { isUser: false, lines: ["72%", "48%"] },
+                    { isUser: true, lines: ["55%"] },
+                    { isUser: false, lines: ["78%"] },
+                    { isUser: true, lines: ["42%"] },
+                    { isUser: false, lines: ["65%", "35%"] },
+                    { isUser: true, lines: ["52%"] },
+                    { isUser: false, lines: ["70%"] },
+                  ] as { isUser: boolean; lines: string[] }[]
+                ).map((row, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.045, duration: 0.28 }}
+                    className={`flex gap-2.5 ${row.isUser ? "flex-row-reverse" : ""}`}
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-surface-container-high/55 animate-pulse shrink-0 mt-1" />
+                    <div
+                      className={`flex flex-col gap-1.5 ${row.isUser ? "items-end" : "items-start"}`}
+                      style={{ maxWidth: "75%" }}
+                    >
+                      {row.lines.map((width, j) => (
+                        <div
+                          key={j}
+                          className={`h-9 rounded-2xl animate-pulse ${row.isUser ? "bg-primary/10 rounded-tr-sm" : "bg-surface-container-high/45 rounded-tl-sm"}`}
+                          style={{ width }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
             ) : messages.length === 0 ? (
+              /* ── Empty / welcome state ── */
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                key="empty"
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-start text-center pt-6 pb-4"
+                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                className="relative flex flex-col items-center justify-start text-center pt-8 pb-4"
               >
+                {/* Ambient orbs */}
                 <motion.div
-                  initial={{ scale: 0.85, rotate: -8 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: "spring", stiffness: 220, damping: 22 }}
-                  className="w-16 h-16 bg-primary/10 rounded-[1.4rem] flex items-center justify-center text-primary mb-4 shadow-xl shadow-primary/15 border border-primary/15 relative"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.45, 0.85, 0.45] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 7,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute top-4 -left-10 w-52 h-52 bg-primary/7 rounded-full blur-3xl pointer-events-none"
+                />
+                <motion.div
+                  animate={{ scale: [1.1, 1, 1.1], opacity: [0.25, 0.6, 0.25] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 9,
+                    ease: "easeInOut",
+                    delay: 2.5,
+                  }}
+                  className="absolute top-16 -right-10 w-44 h-44 bg-blue-400/6 rounded-full blur-3xl pointer-events-none"
+                />
+
+                {/* AI icon */}
+                <motion.div
+                  initial={{ scale: 0.78, opacity: 0, y: 10 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{
+                    delay: 0.08,
+                    type: "spring",
+                    stiffness: 240,
+                    damping: 22,
+                  }}
+                  className="relative mb-6"
                 >
-                  <Sparkles size={30} className="animate-pulse" />
                   <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
-                    transition={{ repeat: Infinity, duration: 3 }}
-                    className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-[9px] font-bold shadow-md"
-                  >
-                    AI
-                  </motion.div>
+                    animate={{ scale: [1, 1.22, 1], opacity: [0.28, 0, 0.28] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 3.5,
+                      ease: "easeOut",
+                    }}
+                    className="absolute -inset-2 rounded-4xl bg-primary/12 pointer-events-none"
+                  />
+                  <div className="relative w-18 h-18 bg-linear-to-br from-primary/18 via-primary/8 to-transparent rounded-[1.6rem] border border-primary/18 flex items-center justify-center shadow-xl shadow-primary/10">
+                    <Sparkles size={30} className="text-primary" />
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.85, 1, 0.85] }}
+                      transition={{ repeat: Infinity, duration: 2.5 }}
+                      className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-[9px] font-bold shadow-md shadow-primary/40"
+                    >
+                      AI
+                    </motion.div>
+                  </div>
                 </motion.div>
 
-                <h1 className="text-2xl font-headline font-black text-on-surface mb-1.5 tracking-tight leading-tight">
+                <motion.h1
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.14 }}
+                  className="text-2xl font-headline font-black text-on-surface mb-2 tracking-tight"
+                >
                   PadiPro Assistant
-                </h1>
-                <p className="text-on-surface-variant/70 max-w-xs mx-auto text-sm font-medium leading-relaxed mb-6 px-2">
-                  {t.chat.welcome}
-                </p>
+                </motion.h1>
 
-                <div className="w-full px-1">
-                  <div className="flex items-center gap-3 mb-3 px-1">
-                    <div className="h-px grow bg-surface-container-high" />
-                    <span className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] whitespace-nowrap">
+                <motion.p
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.18 }}
+                  className="text-on-surface-variant/55 max-w-xs mx-auto text-sm font-medium leading-relaxed mb-7 px-2"
+                >
+                  {t.chat.welcome}
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.22 }}
+                  className="w-full px-1"
+                >
+                  <div className="flex items-center gap-3 mb-3.5 px-1">
+                    <div className="h-px grow bg-surface-container-high/70" />
+                    <span className="text-[10px] font-black text-on-surface-variant/25 uppercase tracking-[0.3em] whitespace-nowrap">
                       Suggested Actions
                     </span>
-                    <div className="h-px grow bg-surface-container-high" />
+                    <div className="h-px grow bg-surface-container-high/70" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2.5">
                     {suggestions.map((s, i) => (
                       <motion.button
                         key={i}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.06 + i * 0.05 }}
-                        whileHover={{ scale: 1.02, y: -1 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{
+                          delay: 0.26 + i * 0.06,
+                          type: "spring",
+                          stiffness: 320,
+                          damping: 28,
+                        }}
+                        whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.97 }}
                         onClick={() => handleSend(s.text)}
-                        className="flex flex-col items-start gap-2.5 p-3.5 rounded-2xl border border-surface-container-high bg-white/60 backdrop-blur-sm text-left transition-all cursor-pointer shadow-sm hover:shadow-md hover:border-primary/20 group"
+                        className="flex flex-col items-start gap-2.5 p-3.5 rounded-2xl border border-surface-container-high/70 bg-white/65 backdrop-blur-sm text-left transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-black/5 hover:border-primary/20 hover:bg-white/90 group"
                       >
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container`}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center bg-linear-to-br ${s.gradient} border border-surface-container/50 group-hover:border-primary/20 transition-colors`}
                         >
                           <s.icon
-                            className="text-on-surface-variant group-hover:text-primary transition-colors"
+                            className="text-on-surface-variant/50 group-hover:text-primary transition-colors"
                             size={17}
                           />
                         </div>
                         <div>
-                          <span className="text-sm font-bold text-on-surface leading-tight block">
+                          <span className="text-[13px] font-semibold text-on-surface/85 leading-tight block">
                             {s.text}
                           </span>
-                          <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-wider">
+                          <span className="text-[10px] font-medium text-on-surface-variant/30 uppercase tracking-wider mt-0.5 block">
                             Quick Query
                           </span>
                         </div>
                       </motion.button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
             ) : (
-              <div className="space-y-3 pt-2">
+              /* ── Message list ── */
+              <div className="space-y-2.5 pt-3">
                 {messages.map((msg, idx) => {
                   const isUser = msg.role === "user";
                   return (
                     <motion.div
                       key={msg.id}
-                      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                      initial={
+                        idx >= historyCountRef.current
+                          ? { opacity: 0, y: 10, scale: 0.97 }
+                          : false
+                      }
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{
-                        delay: Math.min(idx * 0.03, 0.15),
                         type: "spring",
-                        stiffness: 420,
-                        damping: 32,
+                        stiffness: 380,
+                        damping: 30,
                       }}
-                      className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : ""}`}
+                      className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""}`}
                     >
+                      {/* Avatar */}
                       <div
                         className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-1 ${
                           isUser
-                            ? "bg-primary text-white"
-                            : "bg-surface-container text-on-surface-variant"
+                            ? "bg-primary text-white shadow-sm shadow-primary/30"
+                            : "bg-linear-to-br from-surface-container-high to-surface-container border border-surface-container-high/80 text-on-surface-variant/60"
                         }`}
                       >
                         {isUser ? <User size={14} /> : <Bot size={14} />}
                       </div>
+
+                      {/* Bubble column */}
                       <div
                         className={`flex flex-col gap-1 ${
-                          msg.type === "image" || msg.type === "video" || msg.type === "document"
+                          msg.type === "image" ||
+                          msg.type === "video" ||
+                          msg.type === "document"
                             ? "w-[75%]"
                             : "max-w-[80%] sm:max-w-[72%]"
                         } ${isUser ? "items-end" : "items-start"}`}
                       >
                         <div
-                          className={`group relative rounded-2xl text-sm leading-relaxed transition-shadow duration-200 overflow-hidden ${
+                          className={`group relative rounded-2xl text-sm leading-relaxed transition-all duration-200 overflow-hidden ${
                             msg.type === "text" || msg.type === "audio"
                               ? "px-4 py-3"
                               : "w-full"
                           } ${
                             isUser
-                              ? "bg-primary text-on-primary rounded-tr-sm hover:shadow-lg hover:shadow-primary/15"
-                              : "bg-white text-on-surface border border-surface-container/70 rounded-tl-sm hover:shadow-md hover:shadow-black/5"
+                              ? "bg-linear-to-br from-primary to-primary/90 text-on-primary rounded-tr-sm shadow-md shadow-primary/18 hover:shadow-lg hover:shadow-primary/24"
+                              : "bg-white/95 text-on-surface border border-surface-container/50 rounded-tl-sm shadow-sm shadow-black/4 hover:shadow-md hover:shadow-black/[0.07]"
                           } ${msg.status === "sending" && msg.type !== "image" && msg.type !== "video" ? "opacity-70" : ""} ${msg.status === "failed" ? "border-error/50 bg-error-container/10 text-error ring-1 ring-error/20" : ""}`}
                         >
+                          {/* Image */}
                           {msg.type === "image" && (
                             <>
                               <div
-                                className={`relative group/img ${msg.status !== "sending" ? "cursor-zoom-in" : "cursor-default"}`}
+                                className={`relative group/img overflow-hidden ${msg.status !== "sending" ? "cursor-zoom-in" : "cursor-default"}`}
                                 onClick={() =>
                                   msg.status !== "sending" &&
                                   setLightboxSrc(msg.mediaUrl ?? "")
@@ -727,7 +830,7 @@ export default function ChatArea() {
                               >
                                 <img
                                   src={msg.mediaUrl}
-                                  className="w-full max-h-72 object-cover block"
+                                  className="w-full max-h-64 object-cover block transition-transform duration-400 group-hover/img:scale-[1.03]"
                                   alt="Shared image"
                                 />
                                 {msg.status === "sending" ? (
@@ -741,30 +844,34 @@ export default function ChatArea() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/15 transition-colors flex items-center justify-center">
-                                    <Maximize2
-                                      className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow-lg"
-                                      size={24}
-                                    />
+                                  <div className="absolute inset-0 bg-linear-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="bg-black/50 backdrop-blur-sm rounded-full p-2 shadow-lg opacity-0 group-hover/img:opacity-100 transition-all scale-90 group-hover/img:scale-100">
+                                      <Maximize2
+                                        className="text-white"
+                                        size={18}
+                                      />
+                                    </div>
                                   </div>
                                 )}
                               </div>
                               {msg.content && (
                                 <p
-                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}
+                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container/50"}`}
                                 >
                                   {msg.content}
                                 </p>
                               )}
                             </>
                           )}
+
+                          {/* Video */}
                           {msg.type === "video" && (
                             <>
                               <div className="relative">
                                 <video
                                   src={msg.mediaUrl}
                                   controls={msg.status !== "sending"}
-                                  className="w-full max-h-72 block"
+                                  className="w-full max-h-64 block"
                                 />
                                 {msg.status === "sending" && (
                                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 pointer-events-none">
@@ -780,13 +887,15 @@ export default function ChatArea() {
                               </div>
                               {msg.content && (
                                 <p
-                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}
+                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container/50"}`}
                                 >
                                   {msg.content}
                                 </p>
                               )}
                             </>
                           )}
+
+                          {/* Document */}
                           {msg.type === "document" && msg.mediaUrl && (
                             <a
                               href={msg.mediaUrl}
@@ -794,27 +903,50 @@ export default function ChatArea() {
                               rel="noopener noreferrer"
                               className="block group/doc"
                             >
-                              <div className="w-full h-28 bg-primary/8 flex flex-col items-center justify-center gap-2 relative">
-                                <FileText size={40} className="text-primary/50 group-hover/doc:text-primary transition-colors" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">
+                              <div className="w-full h-28 bg-linear-to-br from-primary/8 to-primary/3 flex flex-col items-center justify-center gap-2 relative overflow-hidden">
+                                <motion.div
+                                  animate={{ y: [0, -2, 0] }}
+                                  transition={{
+                                    repeat: Infinity,
+                                    duration: 3,
+                                    ease: "easeInOut",
+                                  }}
+                                >
+                                  <FileText
+                                    size={36}
+                                    className="text-primary/45 group-hover/doc:text-primary/70 transition-colors"
+                                  />
+                                </motion.div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/30">
                                   Solution Plan
                                 </span>
-                                <div className="absolute inset-0 bg-black/0 group-hover/doc:bg-black/5 transition-colors flex items-center justify-center">
-                                  <div className="opacity-0 group-hover/doc:opacity-100 transition-opacity bg-primary text-white rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold shadow-lg">
-                                    <Download size={13} />
-                                    Download
+                                <div className="absolute inset-0 bg-black/0 group-hover/doc:bg-black/4 transition-colors flex items-center justify-center">
+                                  <div className="opacity-0 group-hover/doc:opacity-100 transition-all scale-95 group-hover/doc:scale-100 bg-primary text-white rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold shadow-lg shadow-primary/30">
+                                    <Download size={12} /> Download
                                   </div>
                                 </div>
                               </div>
-                              <div className={`px-3 py-2 flex items-center gap-2 border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
-                                <FileText size={13} className="text-primary shrink-0" />
-                                <span className="text-xs font-semibold text-on-surface-variant truncate flex-1">
-                                  {msg.mediaName ? `${msg.mediaName.slice(0, 16)}….docx` : "solution-plan.docx"}
+                              <div
+                                className={`px-3 py-2.5 flex items-center gap-2 border-t ${isUser ? "border-white/10" : "border-surface-container/50"}`}
+                              >
+                                <FileText
+                                  size={13}
+                                  className="text-primary shrink-0"
+                                />
+                                <span className="text-xs font-semibold text-on-surface-variant/70 truncate flex-1">
+                                  {msg.mediaName
+                                    ? `${msg.mediaName.slice(0, 16)}….docx`
+                                    : "solution-plan.docx"}
                                 </span>
-                                <Download size={13} className="text-primary shrink-0" />
+                                <Download
+                                  size={13}
+                                  className="text-primary/60 shrink-0"
+                                />
                               </div>
                             </a>
                           )}
+
+                          {/* Audio */}
                           {msg.type === "audio" && msg.mediaUrl && (
                             <AudioPlayer
                               id={msg.id}
@@ -824,9 +956,11 @@ export default function ChatArea() {
                               onPlay={setActiveAudioId}
                             />
                           )}
+
+                          {/* Text */}
                           {msg.type === "text" && (
                             <>
-                              <p className="whitespace-pre-wrap font-medium tracking-tight">
+                              <p className="whitespace-pre-wrap font-[450] tracking-[-0.01em] leading-relaxed">
                                 {msg.content}
                               </p>
                               {msg.document_url && (
@@ -836,51 +970,38 @@ export default function ChatArea() {
                                   rel="noopener noreferrer"
                                   className="mt-3 flex items-center gap-2 text-sm font-bold text-primary hover:underline"
                                 >
-                                  <Download size={14} />
-                                  Download Solution Plan
+                                  <Download size={14} /> Download Solution Plan
                                 </a>
                               )}
                             </>
                           )}
-
-                          {/* Status and Action Buttons */}
-                          <div
-                            className={`absolute -bottom-2 ${isUser ? "-left-12" : "-right-12"} flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}
-                          >
-                            {/* Copy button or similar could go here */}
-                          </div>
                         </div>
 
+                        {/* Timestamp + status */}
                         <div
                           className={`flex items-center gap-1.5 px-1 ${isUser ? "flex-row-reverse" : ""}`}
                         >
                           <span
-                            className={`text-[10px] font-semibold ${msg.status === "failed" ? "text-error" : "text-on-surface-variant/30"}`}
+                            className={`text-[10px] font-medium tabular-nums ${msg.status === "failed" ? "text-error" : "text-on-surface-variant/22"}`}
                           >
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
                           </span>
-
                           {isUser && (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                               {msg.status === "sending" && (
                                 <Loader2
-                                  size={12}
-                                  className="animate-spin text-primary"
+                                  size={11}
+                                  className="animate-spin text-on-surface-variant/30"
                                 />
                               )}
                               {msg.status === "failed" && (
-                                <AlertCircle size={12} className="text-error" />
+                                <AlertCircle size={11} className="text-error" />
                               )}
                               {msg.status === "sent" && (
-                                <div className="flex gap-0.5">
-                                  <Check
-                                    size={12}
-                                    className="text-primary-fixed"
-                                  />
-                                </div>
+                                <Check size={11} className="text-primary/55" />
                               )}
                             </div>
                           )}
@@ -893,67 +1014,117 @@ export default function ChatArea() {
             )}
           </AnimatePresence>
 
-          {isTyping && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex gap-2.5 items-start mt-3"
-            >
-              <div className="w-7 h-7 rounded-xl bg-surface-container flex items-center justify-center shrink-0 mt-1">
-                <Bot size={14} className="text-on-surface-variant/50" />
-              </div>
-              <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-sm border border-surface-container/70 shadow-sm flex items-center gap-2">
-                <div className="flex gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.2,
-                        delay: i * 0.18,
-                      }}
-                      className="w-1.5 h-1.5 rounded-full bg-primary/50"
-                    />
-                  ))}
+          {/* Premium typing indicator */}
+          <AnimatePresence>
+            {isTyping && (
+              <motion.div
+                key="typing-indicator"
+                initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 360, damping: 28 }}
+                className="flex gap-2 items-end mt-3"
+              >
+                {/* Glowing avatar */}
+                <div className="relative shrink-0 self-end mb-0.5">
+                  <div className="w-7 h-7 rounded-xl bg-linear-to-br from-primary/25 to-primary/10 border border-primary/20 flex items-center justify-center shadow-sm shadow-primary/15">
+                    <Bot size={14} className="text-primary/75" />
+                  </div>
+                  <motion.div
+                    animate={{ scale: [1, 1.85, 1], opacity: [0.4, 0, 0.4] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: 2.2,
+                      ease: "easeOut",
+                    }}
+                    className="absolute inset-0 rounded-xl bg-primary/18 pointer-events-none"
+                  />
                 </div>
-              </div>
-            </motion.div>
-          )}
+
+                {/* Bubble — animated rotating border via CSS ::before */}
+                <div className="typing-border-wrap shadow-sm shadow-primary/10">
+                  {/* Inner card — sits above the ::before gradient via z-[1] */}
+                  <div
+                    className="relative bg-white/96 backdrop-blur-md overflow-hidden z-[1]"
+                    style={{
+                      borderRadius:
+                        "calc(1rem - 1.5px) calc(1rem - 1.5px) calc(1rem - 1.5px) calc(0.125rem - 1.5px)",
+                    }}
+                  >
+                    <div className="px-4 py-3 flex items-center gap-3">
+                      {/* Wave dots */}
+                      <div className="flex gap-1.5 items-center shrink-0">
+                        {[0, 1, 2].map((i) => (
+                          <motion.span
+                            key={i}
+                            className="block w-1.5 h-1.5 rounded-full bg-primary/55"
+                            animate={{ y: [0, -6, 0] }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 1.0,
+                              delay: i * 0.13,
+                              ease: [0.45, 0, 0.55, 1],
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Rotating status phrase */}
+                      <div className="overflow-hidden h-4.5 flex items-center">
+                        <AnimatePresence mode="wait">
+                          <motion.span
+                            key={typingPhraseIdx}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.22 }}
+                            className="text-[11px] font-medium text-on-surface-variant/38 tracking-wide whitespace-nowrap select-none"
+                          >
+                            {THINKING_PHRASES[typingPhraseIdx]}
+                          </motion.span>
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div ref={bottomAnchorRef} />
         </div>
       </div>
 
-      {/* Scroll to Bottom Button */}
+      {/* Scroll-to-bottom button */}
       <AnimatePresence>
         {showScrollToBottom && (
           <motion.button
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            initial={{ opacity: 0, y: 10, scale: 0.88 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            transition={{ type: "spring", stiffness: 420, damping: 26 }}
             onClick={scrollToBottom}
-            className="fixed bottom-32 md:bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white border border-surface-container/80 shadow-lg shadow-black/10 rounded-full pl-3 pr-4 py-2 flex items-center gap-1.5 text-xs font-bold text-on-surface hover:bg-primary hover:text-white hover:border-primary transition-all cursor-pointer"
+            className="fixed bottom-32 md:bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-xl border border-white/80 shadow-lg shadow-black/8 rounded-full pl-3 pr-4 py-2 flex items-center gap-1.5 text-xs font-semibold text-on-surface/75 hover:bg-primary hover:text-white hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 active:scale-95 transition-all duration-200 cursor-pointer"
           >
-            <ChevronDown size={15} />
-            Scroll to bottom
+            <ChevronDown size={14} />
+            Latest
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Fixed Input Area */}
-      <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-6 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/95 to-transparent pointer-events-none z-50">
+      {/* Input area */}
+      <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-8 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/97 to-transparent pointer-events-none z-50">
         <div className="max-w-2xl mx-auto w-full relative pointer-events-auto">
-          {/* Media Preview Above Input */}
+          {/* Media preview */}
           <AnimatePresence>
             {media && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="mb-2 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl border border-surface-container shadow-lg flex items-center gap-3"
+                exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                className="mb-2 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl border border-surface-container/55 shadow-lg flex items-center gap-3"
               >
-                <div className="w-14 h-14 rounded-xl overflow-hidden border border-surface-container shrink-0">
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-surface-container/55 shrink-0">
                   {media.type === "image" ? (
                     <img
                       src={media.previewUrl}
@@ -968,40 +1139,41 @@ export default function ChatArea() {
                   )}
                 </div>
                 <div className="grow min-w-0">
-                  <p className="text-sm font-bold text-on-surface truncate">
+                  <p className="text-sm font-semibold text-on-surface truncate">
                     {media.file.name}
                   </p>
-                  <p className="text-[10px] text-on-surface-variant/50 uppercase font-semibold tracking-wider mt-0.5">
-                    {(media.size / 1024 / 1024).toFixed(2)} MB • {media.type}
+                  <p className="text-[10px] text-on-surface-variant/40 uppercase font-medium tracking-wider mt-0.5">
+                    {(media.size / 1024 / 1024).toFixed(2)} MB · {media.type}
                   </p>
                 </div>
                 <button
                   onClick={() => setMedia(null)}
-                  className="w-8 h-8 rounded-full bg-error/10 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-error/8 text-error/65 flex items-center justify-center hover:bg-error hover:text-white transition-all cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
 
+          {/* Composer form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               if (!isRecording) handleSend();
             }}
-            className="flex items-center gap-2 bg-white rounded-2xl px-2 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.09)] border border-surface-container/60 focus-within:border-primary/30 focus-within:shadow-[0_4px_28px_rgba(0,0,0,0.12)] transition-all duration-300"
+            className="flex items-center gap-2 bg-white/88 backdrop-blur-2xl rounded-2xl px-2 py-2 shadow-[0_2px_24px_rgba(0,0,0,0.07),0_1px_3px_rgba(0,0,0,0.04)] border border-surface-container/40 focus-within:border-primary/30 focus-within:shadow-[0_2px_32px_rgba(0,0,0,0.09)] transition-all duration-200"
           >
             {!isRecording && !audioURL && (
               <>
                 <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.1, rotate: 15 }}
+                  whileTap={{ scale: 0.88 }}
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2.5 text-on-surface-variant/40 hover:text-primary transition-colors rounded-xl hover:bg-primary/5 cursor-pointer shrink-0"
+                  className="p-2.5 text-on-surface-variant/32 hover:text-primary transition-all rounded-xl hover:bg-primary/6 cursor-pointer shrink-0"
                 >
-                  <Paperclip size={20} />
+                  <Paperclip size={19} />
                 </motion.button>
                 <input
                   ref={fileInputRef}
@@ -1026,32 +1198,33 @@ export default function ChatArea() {
                   }}
                   placeholder={t.chat.placeholder}
                   rows={1}
-                  className="grow min-w-0 bg-transparent border-none py-2.5 px-1 text-sm font-medium focus:ring-0 outline-none max-h-32 scrollbar-hide text-on-surface placeholder:text-on-surface-variant/35 resize-none leading-relaxed"
+                  className="grow min-w-0 bg-transparent border-none py-2.5 px-1 text-sm font-medium focus:ring-0 outline-none max-h-32 scrollbar-hide text-on-surface placeholder:text-on-surface-variant/28 resize-none leading-relaxed"
                 />
               </>
             )}
 
             {isRecording && (
               <div className="grow flex items-center gap-3 px-3 py-2">
-                <div className="flex gap-0.5">
-                  {[...Array(4)].map((_, i) => (
+                <div className="flex gap-0.5 items-end">
+                  {[...Array(5)].map((_, i) => (
                     <motion.div
                       key={i}
-                      animate={{ height: [6, 16, 6] }}
+                      animate={{ height: [3, 14, 3] }}
                       transition={{
                         repeat: Infinity,
-                        duration: 0.5,
-                        delay: i * 0.1,
+                        duration: 0.55,
+                        delay: i * 0.08,
+                        ease: "easeInOut",
                       }}
-                      className="w-1 bg-error rounded-full"
+                      className="w-0.5 bg-error rounded-full"
                     />
                   ))}
                 </div>
-                <span className="font-bold tabular-nums text-error text-sm">
+                <span className="font-bold tabular-nums text-error text-sm tracking-wider">
                   {formatTime(recordingDuration)}
                 </span>
-                <span className="text-on-surface-variant/40 font-semibold text-[10px] uppercase tracking-wider">
-                  Recording…
+                <span className="text-on-surface-variant/32 font-medium text-[10px] uppercase tracking-wider">
+                  Recording
                 </span>
               </div>
             )}
@@ -1070,9 +1243,9 @@ export default function ChatArea() {
                 <button
                   type="button"
                   onClick={deleteAudio}
-                  className="w-8 h-8 shrink-0 text-on-surface-variant/40 hover:text-error transition-all flex items-center justify-center cursor-pointer rounded-full hover:bg-error/10"
+                  className="w-8 h-8 shrink-0 text-on-surface-variant/32 hover:text-error transition-all flex items-center justify-center cursor-pointer rounded-full hover:bg-error/8"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 size={17} />
                 </button>
               </div>
             )}
@@ -1081,56 +1254,71 @@ export default function ChatArea() {
               <motion.button
                 initial={{ scale: 0.8 }}
                 animate={{ scale: 1 }}
-                whileTap={{ scale: 0.92 }}
+                whileTap={{ scale: 0.9 }}
                 type="button"
                 onClick={stopRecording}
-                className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center bg-error text-white shadow-lg shadow-error/20 cursor-pointer"
+                className="h-10 w-10 rounded-xl shrink-0 flex items-center justify-center bg-error text-white shadow-lg shadow-error/25 cursor-pointer"
               >
-                <Square size={16} fill="currentColor" />
+                <Square size={14} fill="currentColor" />
               </motion.button>
             ) : (
               <div className="shrink-0">
                 {!input.trim() && !media && !audioURL ? (
                   <motion.button
                     whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
+                    whileTap={{ scale: 0.9 }}
                     type="button"
                     onClick={startRecording}
                     disabled={isTyping}
-                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all cursor-pointer relative ${
                       isTyping
-                        ? "bg-surface-container text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "text-on-surface-variant/40 hover:text-primary hover:bg-primary/8"
+                        ? "bg-surface-container text-on-surface-variant opacity-35 cursor-not-allowed"
+                        : "text-on-surface-variant/38 hover:text-primary hover:bg-primary/8"
                     }`}
                   >
-                    <Mic size={20} />
+                    <Mic size={19} />
+                    {!isTyping && (
+                      <motion.span
+                        animate={{ scale: [1, 1.6, 1], opacity: [0.3, 0, 0.3] }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 2.8,
+                          ease: "easeOut",
+                        }}
+                        className="absolute inset-0 rounded-xl bg-primary/10 pointer-events-none"
+                      />
+                    )}
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.93 }}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.91 }}
                     type="submit"
                     disabled={
                       (!input.trim() && !media && !audioURL) || isTyping
                     }
                     className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                       (!input.trim() && !media && !audioURL) || isTyping
-                        ? "bg-surface-container text-on-surface-variant opacity-40 cursor-not-allowed"
-                        : "bg-primary text-white shadow-lg shadow-primary/25"
+                        ? "bg-surface-container text-on-surface-variant opacity-35 cursor-not-allowed"
+                        : "bg-linear-to-br from-primary to-primary/85 text-white shadow-lg shadow-primary/28"
                     }`}
                   >
                     {isTyping ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <Loader2 size={17} className="animate-spin" />
                     ) : (
-                      <Send size={18} />
+                      <Send
+                        size={17}
+                        className="translate-x-px -translate-y-px"
+                      />
                     )}
                   </motion.button>
                 )}
               </div>
             )}
           </form>
-          <p className="text-center text-[10px] font-medium text-on-surface-variant/20 mt-2 pointer-events-none">
-            PadiPro can make mistakes. Check important info.
+
+          <p className="text-center text-[10px] font-medium text-on-surface-variant/16 mt-2 pointer-events-none">
+            PadiPro may make mistakes. Verify important information.
           </p>
         </div>
       </div>
