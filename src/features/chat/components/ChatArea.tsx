@@ -388,28 +388,41 @@ export default function ChatArea() {
         mediaType,
       );
 
-      if (!response || !response.ok) {
-        throw new Error("API request failed");
+      if (!response || response.status === 500) {
+        throw new Error("Server error");
       }
 
       const json = await response.json();
-      if (!json.success || !json.data?.messages) {
-        throw new Error(json.message || "Invalid response from server");
-      }
 
       // 5. Render assistant messages
-      const assistantMessages: Message[] = json.data.messages.map(
-        (msg: { message: string; type: string; document_url?: string }) => ({
-          id: crypto.randomUUID(),
-          role: "assistant" as const,
-          type: "text" as const,
-          content: msg.message,
-          status: "sent" as const,
-          timestamp: new Date(),
-          document_url: msg.document_url,
-        }),
-      );
-      setMessages((prev) => [...prev, ...assistantMessages]);
+      if (json.success && json.data?.messages) {
+        const assistantMessages: Message[] = json.data.messages.map(
+          (msg: { message: string; type: string; document_url?: string }) => ({
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            type: "text" as const,
+            content: msg.message,
+            status: "sent" as const,
+            timestamp: new Date(),
+            document_url: msg.document_url,
+          }),
+        );
+        setMessages((prev) => [...prev, ...assistantMessages]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant" as const,
+            type: "text" as const,
+            content:
+              json.message ||
+              "We seem to be having some issues, please try again in an hour or so.",
+            status: "sent" as const,
+            timestamp: new Date(),
+          },
+        ]);
+      }
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [
@@ -418,7 +431,8 @@ export default function ChatArea() {
           id: crypto.randomUUID(),
           role: "assistant",
           type: "text",
-          content: "Sorry, something went wrong. Please try again.",
+          content:
+            "We seem to be having some issues, please try again in an hour or so.",
           status: "sent",
           timestamp: new Date(),
         },
@@ -639,7 +653,8 @@ export default function ChatArea() {
                               <div
                                 className={`relative group/img ${msg.status !== "sending" ? "cursor-zoom-in" : "cursor-default"}`}
                                 onClick={() =>
-                                  msg.status !== "sending" && setLightboxSrc(msg.mediaUrl ?? "")
+                                  msg.status !== "sending" &&
+                                  setLightboxSrc(msg.mediaUrl ?? "")
                                 }
                               >
                                 <img
@@ -649,8 +664,13 @@ export default function ChatArea() {
                                 />
                                 {msg.status === "sending" ? (
                                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
-                                    <Loader2 className="text-white animate-spin" size={28} />
-                                    <span className="text-white/80 text-xs font-semibold">Uploading…</span>
+                                    <Loader2
+                                      className="text-white animate-spin"
+                                      size={28}
+                                    />
+                                    <span className="text-white/80 text-xs font-semibold">
+                                      Uploading…
+                                    </span>
                                   </div>
                                 ) : (
                                   <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/15 transition-colors flex items-center justify-center">
@@ -662,7 +682,9 @@ export default function ChatArea() {
                                 )}
                               </div>
                               {msg.content && (
-                                <p className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
+                                <p
+                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}
+                                >
                                   {msg.content}
                                 </p>
                               )}
@@ -678,13 +700,20 @@ export default function ChatArea() {
                                 />
                                 {msg.status === "sending" && (
                                   <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 pointer-events-none">
-                                    <Loader2 className="text-white animate-spin" size={28} />
-                                    <span className="text-white/80 text-xs font-semibold">Uploading…</span>
+                                    <Loader2
+                                      className="text-white animate-spin"
+                                      size={28}
+                                    />
+                                    <span className="text-white/80 text-xs font-semibold">
+                                      Uploading…
+                                    </span>
                                   </div>
                                 )}
                               </div>
                               {msg.content && (
-                                <p className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}>
+                                <p
+                                  className={`px-3 py-2.5 text-sm whitespace-pre-wrap border-t ${isUser ? "border-white/10" : "border-surface-container"}`}
+                                >
                                   {msg.content}
                                 </p>
                               )}
