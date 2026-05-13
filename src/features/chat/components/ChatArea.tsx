@@ -317,7 +317,7 @@ export default function ChatArea() {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
-                ? { ...msg, mediaUrl: downloadUrl, status: "sent" }
+                ? { ...msg, status: "sent" }
                 : msg,
             ),
           );
@@ -359,7 +359,7 @@ export default function ChatArea() {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
-                ? { ...msg, mediaUrl: downloadUrl, status: "sent" }
+                ? { ...msg, status: "sent" }
                 : msg,
             ),
           );
@@ -523,8 +523,9 @@ export default function ChatArea() {
       {/* Chat messages scroll area — flex-col-reverse anchors scrollTop=0 to bottom */}
       <div
         className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
+        style={{ overflowAnchor: "none" }}
       >
-        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-20">
+        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-16 md:pb-4">
           <AnimatePresence initial={false}>
             {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
