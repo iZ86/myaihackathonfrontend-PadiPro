@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Send,
@@ -20,7 +20,6 @@ import {
   Maximize2,
   Download,
   FileText,
-  ChevronDown,
 } from "lucide-react";
 import { useLanguage } from "@context/lang/useLanguage";
 import type { Message } from "@datatypes/chatType";
@@ -70,12 +69,12 @@ export default function ChatArea() {
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [activeAudioId, setActiveAudioId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomAnchorRef = useRef<HTMLDivElement>(null);
-  const initialScrollDone = useRef(false);
-  const isNearBottom = useRef(true);
+  useLayoutEffect(() => {
+    setIsReady(true);
+  }, []);
+
   const historyCountRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -175,46 +174,6 @@ export default function ChatArea() {
     loadHistory();
   }, [user?.mobile_no]);
 
-  // Auto-scroll: instant on initial load, smooth only when near bottom
-  useEffect(() => {
-    if (isLoadingHistory) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    if (!initialScrollDone.current) {
-      el.scrollTop = el.scrollHeight;
-      initialScrollDone.current = true;
-      isNearBottom.current = true;
-      setShowScrollToBottom(false);
-      return;
-    }
-    if (isNearBottom.current) {
-      bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, isTyping, isLoadingHistory]);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-    }
-  }, [input]);
-
-  // Track near-bottom for scroll button
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const distanceFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight;
-      const near = distanceFromBottom < 150;
-      isNearBottom.current = near;
-      setShowScrollToBottom(!near);
-    };
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
-
   // Cycle thinking phrases while AI responds
   useEffect(() => {
     if (!isTyping) {
@@ -227,12 +186,6 @@ export default function ChatArea() {
     );
     return () => clearInterval(id);
   }, [isTyping]);
-
-  const scrollToBottom = () => {
-    bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
-    isNearBottom.current = true;
-    setShowScrollToBottom(false);
-  };
 
   const processFile = (file: File) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -349,15 +302,18 @@ export default function ChatArea() {
 
     try {
       let mediaUrl: string | undefined;
+      let uploadedStoragePath: string | undefined;
       const token = localStorage.getItem("token") ?? "";
 
       if (currentMedia) {
         try {
-          const { downloadUrl, storagePath, sha256 } = await uploadChatFile(
+          const { downloadUrl, storagePath } = await uploadChatFile(
             mobileNo,
             currentMedia.file,
           );
           mediaUrl = downloadUrl;
+          uploadedStoragePath = storagePath;
+
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
@@ -368,11 +324,10 @@ export default function ChatArea() {
           await saveMediaMetaDataAPI(
             token,
             mobileNo,
-            currentMedia.file.name.split(".")[0],
+            currentMedia.file.name,
             currentMedia.file.type,
             storagePath,
             downloadUrl,
-            sha256,
             currentMedia.type,
             finalInput || undefined,
           );
@@ -394,12 +349,13 @@ export default function ChatArea() {
           const audioFile = new File([blob], "audio_message.webm", {
             type: "audio/webm",
           });
-          const { downloadUrl, storagePath, sha256 } = await uploadChatFile(
+          const { downloadUrl, storagePath } = await uploadChatFile(
             mobileNo,
             audioFile,
           );
           mediaUrl = downloadUrl;
-          audioMediaName = audioFile.name.split(".")[0];
+          uploadedStoragePath = storagePath;
+          audioMediaName = audioFile.name;
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === messageId
@@ -414,7 +370,6 @@ export default function ChatArea() {
             audioFile.type,
             storagePath,
             downloadUrl,
-            sha256,
             "audio",
           );
         } catch {
@@ -428,9 +383,7 @@ export default function ChatArea() {
         }
       }
 
-      const mediaName = currentAudio
-        ? audioMediaName
-        : currentMedia?.file.name.split(".")[0];
+      const mediaName = uploadedStoragePath?.split("/")[2].split(".")[0];
       const mediaType = currentAudio ? "audio" : (currentMedia?.type ?? "text");
       const response = await sendWebchatMessageAPI(
         token,
@@ -567,26 +520,11 @@ export default function ChatArea() {
         )}
       </AnimatePresence>
 
-      {/* Atmospheric background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-primary/7 rounded-full blur-[72px]" />
-        <div className="absolute top-1/3 -left-20 w-64 h-64 bg-blue-400/5 rounded-full blur-[60px]" />
-        <div className="absolute -bottom-12 right-1/4 w-72 h-48 bg-emerald-200/4 rounded-full blur-[56px]" />
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: "128px 128px",
-          }}
-        />
-      </div>
-
-      {/* Chat messages scroll area */}
+      {/* Chat messages scroll area — flex-col-reverse anchors scrollTop=0 to bottom */}
       <div
-        ref={scrollRef}
-        className="grow overflow-y-auto no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))]"
+        className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
       >
-        <div className="max-w-3xl mx-auto w-full px-4 pt-2 pb-48 md:pb-36">
+        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-20">
           <AnimatePresence initial={false}>
             {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
@@ -1043,9 +981,8 @@ export default function ChatArea() {
 
                 {/* Bubble — animated rotating border via CSS ::before */}
                 <div className="typing-border-wrap shadow-sm shadow-primary/10">
-                  {/* Inner card — sits above the ::before gradient via z-[1] */}
                   <div
-                    className="relative bg-white/96 backdrop-blur-md overflow-hidden z-[1]"
+                    className="relative bg-white/96 backdrop-blur-md overflow-hidden z-10"
                     style={{
                       borderRadius:
                         "calc(1rem - 1.5px) calc(1rem - 1.5px) calc(1rem - 1.5px) calc(0.125rem - 1.5px)",
@@ -1090,27 +1027,8 @@ export default function ChatArea() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          <div ref={bottomAnchorRef} />
         </div>
       </div>
-
-      {/* Scroll-to-bottom button */}
-      <AnimatePresence>
-        {showScrollToBottom && (
-          <motion.button
-            initial={{ opacity: 0, y: 10, scale: 0.88 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 420, damping: 26 }}
-            onClick={scrollToBottom}
-            className="fixed bottom-32 md:bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-xl border border-white/80 shadow-lg shadow-black/8 rounded-full pl-3 pr-4 py-2 flex items-center gap-1.5 text-xs font-semibold text-on-surface/75 hover:bg-primary hover:text-white hover:border-primary/50 hover:shadow-md hover:shadow-primary/20 active:scale-95 transition-all duration-200 cursor-pointer"
-          >
-            <ChevronDown size={14} />
-            Latest
-          </motion.button>
-        )}
-      </AnimatePresence>
 
       {/* Input area */}
       <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-8 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/97 to-transparent pointer-events-none z-50">
