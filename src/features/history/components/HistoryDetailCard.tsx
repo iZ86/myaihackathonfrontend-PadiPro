@@ -416,14 +416,24 @@ export default function HistoryDetailCard({ item }: Props) {
         className="rounded-3xl overflow-hidden mb-8"
         style={{ backgroundColor: "#fff", border: "1px solid #e5e2dc" }}
       >
-        {/* Full-width scan image */}
+        {/* Full-width scan image/video */}
         <div className="w-full h-52 overflow-hidden">
-          <img
-            src={item.download_url}
-            // alt={diseaseName}
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+          {item.download_url?.includes("/videos/") ? (
+            <video
+              src={item.download_url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img
+              src={item.download_url}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          )}
         </div>
 
         {/* Detection rows — one per disease found in this scan */}

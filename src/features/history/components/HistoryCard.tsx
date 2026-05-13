@@ -455,12 +455,23 @@ export default function HistoryCard() {
               {/* Top: thumbnail + date — one per card */}
               <div className="flex items-center gap-3 px-5 pt-5 pb-0">
                 <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
-                  <img
-                    src={item.download_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
+                  {item.download_url?.includes("/videos/") ? (
+                    <video
+                      src={item.download_url}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={item.download_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
                 </div>
                 <p
                   className="text-[10px] font-bold uppercase tracking-widest"
