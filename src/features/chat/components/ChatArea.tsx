@@ -525,7 +525,7 @@ export default function ChatArea() {
         className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
         style={{ overflowAnchor: "none" }}
       >
-        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-16 md:pb-4">
+        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-24">
           <AnimatePresence initial={false}>
             {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
@@ -1032,7 +1032,7 @@ export default function ChatArea() {
       </div>
 
       {/* Input area */}
-      <div className="fixed bottom-18 md:bottom-0 left-0 right-0 px-3 pt-8 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/97 to-transparent pointer-events-none z-50">
+      <div className="fixed bottom-0 left-0 right-0 px-3 pt-8 pb-3 md:px-6 md:pb-5 bg-linear-to-t from-white via-white/97 to-transparent pointer-events-none z-50">
         <div className="max-w-2xl mx-auto w-full relative pointer-events-auto">
           {/* Media preview */}
           <AnimatePresence>

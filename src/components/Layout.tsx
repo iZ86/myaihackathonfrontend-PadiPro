@@ -196,7 +196,7 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
       <header className="flex fixed top-0 w-full z-50 glass-nav shadow-sm items-center justify-between px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-center gap-3">
           <button
-            className="p-2 rounded-full hover:bg-surface-container transition-colors hidden md:flex cursor-pointer"
+            className="p-2 rounded-full hover:bg-surface-container transition-colors flex cursor-pointer"
             onClick={() => setIsSidebarOpen(true)}
           >
             <Menu className="w-6 h-6 text-primary" />
@@ -218,87 +218,8 @@ export default function Layout({ children, title = "PadiPro" }: LayoutProps) {
         </NavLink>
       </header>
 
-      <main className="flex-1 pt-20 pb-32">{children}</main>
+      <main className="flex-1 pt-20 pb-4">{children}</main>
 
-      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md glass-nav rounded-full z-50 flex justify-around items-center py-3 px-2 shadow-lg">
-        {/* <NavLink
-          to="/home"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-          }
-        >
-          <Home
-            className={`w-6 h-6 ${activeTab === "home" ? "fill-current" : ""}`}
-          />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            Home
-          </span>
-        </NavLink> */}
-
-        {hasLocationPermission !== false && (
-          <>
-            <NavLink
-              to="/chat"
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
-              }
-            >
-              <MessageSquareText className="w-6 h-6" />
-              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-                {t.nav.chat}
-              </span>
-            </NavLink>
-
-            <NavLink
-              to="/weather"
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
-              }
-            >
-              <Cloud className="w-6 h-6" />
-              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-                {t.nav.weather}
-              </span>
-            </NavLink>
-
-            <NavLink
-              to="/history"
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
-              }
-            >
-              <History className="w-6 h-6" />
-              <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-                {t.nav.history}
-              </span>
-            </NavLink>
-          </>
-        )}
-
-        {/* <NavLink
-          to="/products"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-5 py-2 rounded-full transition-all ${isActive ? "bg-primary-fixed text-on-primary-fixed-variant scale-95" : "text-outline hover:text-primary"}`
-          }
-        >
-          <ShoppingCart className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            Products
-          </span>
-        </NavLink> */}
-
-        <NavLink
-          to="/profile"
-          className={({ isActive }) =>
-            `flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${isActive ? "bg-primary/10 text-primary" : "text-outline hover:text-primary"}`
-          }
-        >
-          <User className="w-6 h-6" />
-          <span className="text-[10px] font-medium uppercase tracking-wider mt-0.5 font-label">
-            {t.nav.profile}
-          </span>
-        </NavLink>
-      </nav>
     </div>
   );
 }
