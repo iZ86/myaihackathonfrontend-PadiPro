@@ -316,15 +316,12 @@ export default function ChatArea() {
 
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === messageId
-                ? { ...msg, status: "sent" }
-                : msg,
+              msg.id === messageId ? { ...msg, status: "sent" } : msg,
             ),
           );
           await saveMediaMetaDataAPI(
             token,
             mobileNo,
-            currentMedia.file.name,
             currentMedia.file.type,
             storagePath,
             downloadUrl,
@@ -342,7 +339,6 @@ export default function ChatArea() {
         }
       }
 
-      let audioMediaName: string | undefined;
       if (currentAudio) {
         try {
           const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
@@ -355,18 +351,15 @@ export default function ChatArea() {
           );
           mediaUrl = downloadUrl;
           uploadedStoragePath = storagePath;
-          audioMediaName = audioFile.name;
+
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === messageId
-                ? { ...msg, status: "sent" }
-                : msg,
+              msg.id === messageId ? { ...msg, status: "sent" } : msg,
             ),
           );
           await saveMediaMetaDataAPI(
             token,
             mobileNo,
-            audioMediaName,
             audioFile.type,
             storagePath,
             downloadUrl,

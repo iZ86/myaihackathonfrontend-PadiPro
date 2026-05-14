@@ -38,7 +38,6 @@ export async function uploadChatFile(mobileNo: string, file: File): Promise<{ do
 export async function saveMediaMetaDataAPI(
   token: string,
   mobileNo: string,
-  fileName: string,
   mimeType: string,
   storagePath: string,
   downloadUrl: string,
