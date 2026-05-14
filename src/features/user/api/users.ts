@@ -47,6 +47,23 @@ export const getDiagnosisHistoryAPI = async (token: string, mobileNo: string): P
   }
 };
 
+export async function updateUserNameByMobileNoAPI(mobileNo: string, name: string): Promise<Response | undefined> {
+  try {
+    return await fetch(`${backendServerConfig.backendServerUrl}/users/${mobileNo}/name`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
+
+}
+
 export async function updateUserLangByMobileNoAPI(mobileNo: string, lang: 'BM' | 'EN', type: string): Promise<Response | undefined> {
   try {
     return await fetch(`${backendServerConfig.backendServerUrl}/users/${mobileNo}/lang`, {

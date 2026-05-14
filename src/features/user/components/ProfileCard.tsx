@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   User as UserIcon,
@@ -11,17 +11,24 @@ import {
   Loader2,
   AlertCircle,
   MapPin,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@context/auth/useAuth";
+import { toast } from "sonner";
 import { useLanguage } from "@context/lang/useLanguage";
 import { useLocationPermission } from "@context/location/useLocationPermission";
-import { updateUserLangByMobileNoAPI } from "@features/user/api/users";
+import {
+  updateUserLangByMobileNoAPI,
+  updateUserNameByMobileNoAPI,
+} from "@features/user/api/users";
 import type { Language } from "@config/translations";
 
 export default function ProfileCard() {
   const { language, setLanguage, t } = useLanguage();
-  const { loading, user, logout } = useAuth();
+  const { loading, user, logout, updateUser } = useAuth();
   const {
     hasLocationPermission,
     requestLocation,
@@ -29,6 +36,37 @@ export default function ProfileCard() {
     error: locationError,
   } = useLocationPermission();
   const navigate = useNavigate();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  const handleEditName = () => {
+    setNameInput(user?.name ?? "");
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed || !user?.mobile_no) return;
+    setIsSavingName(true);
+    try {
+      const response = await updateUserNameByMobileNoAPI(
+        user.mobile_no,
+        trimmed,
+      );
+      if (response && response.ok) {
+        updateUser({ name: trimmed });
+        setIsEditingName(false);
+        toast.success("Name updated successfully.");
+      } else {
+        toast.error("Failed to update name. Please try again.");
+      }
+    } catch {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   useEffect(() => {
     if (!user || !user.mobile_no) return;
@@ -185,6 +223,58 @@ export default function ProfileCard() {
             </h2>
           </div>
           <div className="space-y-4">
+            {/* Editable name row */}
+            <div className="flex justify-between items-center p-4 bg-white rounded-2xl border border-surface-container">
+              <div className="grow mr-2">
+                <p className="text-xs uppercase tracking-wider text-outline font-bold font-label mb-1">
+                  {t.profile.name || "-"}
+                </p>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSaveName();
+                        if (e.key === "Escape") setIsEditingName(false);
+                      }}
+                      className="flex-1 border-b-2 border-primary outline-none font-medium font-body text-on-surface bg-transparent pb-0.5"
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      disabled={isSavingName || !nameInput.trim()}
+                      className="text-primary disabled:opacity-40 cursor-pointer"
+                    >
+                      {isSavingName ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingName(false)}
+                      className="text-outline hover:text-error cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <p className="font-medium font-body truncate">
+                    {user?.name || "—"}
+                  </p>
+                )}
+              </div>
+              {!isEditingName && (
+                <button
+                  onClick={handleEditName}
+                  className="text-outline hover:text-primary transition-colors cursor-pointer"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             {[
               { label: t.auth.phone, value: user?.mobile_no || "" },
               {

@@ -17,10 +17,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response && response.ok) {
         const json = await response.json();
-        const location = await reverseGeocodeAPI(
-          json.data.coords._latitude,
-          json.data.coords._longitude,
-        );
+
+        let location: string = "";
+
+        if (
+          json.data.coords?._latitude > 0 &&
+          json.data.coords?._longitude > 0
+        ) {
+          location = await reverseGeocodeAPI(
+            json.data.coords._latitude,
+            json.data.coords._longitude,
+          );
+        }
+
         setUser({
           ...json.data,
           location,
@@ -63,12 +72,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateUser = (data: Partial<UserData>) => {
-    setUser((prev) => prev ? { ...prev, ...data } : null);
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, isAuthenticated: !!user, updateUser }}
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

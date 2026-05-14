@@ -117,6 +117,7 @@ export const translations = {
       requesting: "Requesting...",
       updating: "Updating...",
       accountSettings: "Account Settings",
+      name: "Name",
     },
     chat: {
       placeholder: "Type a message...",
@@ -249,6 +250,7 @@ export const translations = {
       requesting: "Meminta...",
       updating: "Mengemas kini...",
       accountSettings: "Tetapan Akaun",
+      name: "Nama",
     },
     chat: {
       placeholder: "Taip mesej...",
