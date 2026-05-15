@@ -7,6 +7,7 @@ import {
   Leaf,
   Clock,
   CheckCircle2,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getDiagnosisHistoryAPI } from "@features/user/api/users";
@@ -631,7 +632,7 @@ export default function HistoryCard() {
 
               {/* Footer — one per card */}
               <div
-                className="flex items-center justify-between px-5 py-3.5 mt-2"
+                className="flex items-center justify-between px-5 py-3.5 mt-2 gap-2"
                 style={{ borderTop: "1px solid #f0ede8" }}
               >
                 {hasPlan ? (
@@ -660,16 +661,31 @@ export default function HistoryCard() {
                     {t.history.noTreatmentRequired}
                   </div>
                 )}
-                <div
-                  className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: "rgba(15,82,56,0.08)",
-                    color: "#0f5238",
-                    fontFamily: "'Manrope', sans-serif",
-                  }}
-                >
-                  <CheckCircle2 className="w-3 h-3" />
-                  {t.history.accuracy}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {item.document && (
+                    <div
+                      className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full"
+                      style={{
+                        backgroundColor: "rgba(15,82,56,0.08)",
+                        color: "#0f5238",
+                        fontFamily: "'Manrope', sans-serif",
+                      }}
+                    >
+                      <FileText className="w-3 h-3" />
+                      Report
+                    </div>
+                  )}
+                  <div
+                    className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full"
+                    style={{
+                      backgroundColor: "rgba(15,82,56,0.08)",
+                      color: "#0f5238",
+                      fontFamily: "'Manrope', sans-serif",
+                    }}
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    {t.history.accuracy}
+                  </div>
                 </div>
               </div>
             </motion.div>
