@@ -80,6 +80,7 @@ export default function ChatArea() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioMimeTypeRef = useRef<string>("audio/webm");
   const timerIntervalRef = useRef<number | null>(null);
 
   const suggestions = [
@@ -209,14 +210,24 @@ export default function ChatArea() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+          ? "audio/webm"
+          : MediaRecorder.isTypeSupported("audio/mp4")
+            ? "audio/mp4"
+            : "";
+      audioMimeTypeRef.current = mimeType || "audio/webm";
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const type = mediaRecorder.mimeType || audioMimeTypeRef.current;
+        audioMimeTypeRef.current = type;
+        const blob = new Blob(audioChunksRef.current, { type });
         setAudioURL(URL.createObjectURL(blob));
       };
       mediaRecorder.start();
@@ -341,9 +352,11 @@ export default function ChatArea() {
 
       if (currentAudio) {
         try {
-          const blob = new Blob(currentAudioChunks, { type: "audio/webm" });
-          const audioFile = new File([blob], "audio_message.webm", {
-            type: "audio/webm",
+          const mimeType = audioMimeTypeRef.current;
+          const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+          const blob = new Blob(currentAudioChunks, { type: mimeType });
+          const audioFile = new File([blob], `audio_message.${ext}`, {
+            type: mimeType,
           });
           const { downloadUrl, storagePath } = await uploadChatFile(
             mobileNo,
