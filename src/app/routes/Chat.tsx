@@ -4,7 +4,7 @@ import ChatArea from "@features/chat/components/ChatArea";
 export default function Chat() {
   return (
     <Layout>
-      <div className="h-[calc(100dvh-80px)] overflow-hidden">
+      <div className="flex flex-col" style={{ height: "calc(100dvh - 80px)" }}>
         <ChatArea />
       </div>
     </Layout>

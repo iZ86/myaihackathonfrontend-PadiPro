@@ -218,7 +218,10 @@ export default function ChatArea() {
             ? "audio/mp4"
             : "";
       audioMimeTypeRef.current = mimeType || "audio/webm";
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        mimeType ? { mimeType } : {},
+      );
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       mediaRecorder.ondataavailable = (e) => {
@@ -528,10 +531,12 @@ export default function ChatArea() {
 
       {/* Chat messages scroll area — flex-col-reverse anchors scrollTop=0 to bottom */}
       <div
-        className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
+        className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar touch-pan-y [-webkit-overflow-scrolling:touch] mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
         style={{ overflowAnchor: "none" }}
       >
-        <div className={`flex flex-col ${messages.length === 0 && !isLoadingHistory ? "justify-center" : "justify-end"} min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-30`}>
+        <div
+          className={`flex flex-col ${messages.length === 0 && !isLoadingHistory ? "justify-center" : "justify-end"} min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-30`}
+        >
           <AnimatePresence initial={false}>
             {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
