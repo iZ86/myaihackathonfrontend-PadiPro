@@ -290,7 +290,7 @@ export default function ProfileCard() {
                   <p className="text-xs uppercase tracking-wider text-outline font-bold font-label">
                     {item.label}
                   </p>
-                  <p className="font-medium font-body truncate">{item.value}</p>
+                  <p className="font-medium font-body">{item.value}</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-outline group-hover:text-primary transition-transform group-hover:translate-x-1" />
               </div>
