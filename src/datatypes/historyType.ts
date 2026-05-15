@@ -21,5 +21,6 @@ export type HistoryItem = {
   statusColor?: string;
   statusBg?: string;
   statusText?: string;
+  document?: string;
 }
 
