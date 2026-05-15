@@ -123,10 +123,10 @@ export const translations = {
       welcome: "Hello 👋 How can I help you today?",
       q1: "What crops grow well in Malaysia?",
       a1: "Rice, oil palm, and rubber are common crops in Malaysia due to the tropical climate.",
-      s_crops: "What crops grow well here?",
-      s_weather: "How's the field weather?",
-      s_pests: "Identify a pest issue",
-      s_advice: "General farming advice"
+      s_crops: "What factors influence the rate of paddy diseases?",
+      s_weather: "How does weather affect paddy crop diseases?",
+      s_pests: "What are the most common diseases found in paddy fields?",
+      s_advice: "What symptoms indicate unhealthy paddy crops?"
     }
   },
   bm: {
@@ -253,10 +253,10 @@ export const translations = {
       welcome: "Halo 👋 Bagaimana saya boleh membantu anda hari ini?",
       q1: "Tanaman apa yang tumbuh subur di Malaysia?",
       a1: "Padi, kelapa sawit, dan getah adalah tanaman biasa di Malaysia disebabkan iklim tropika.",
-      s_crops: "Tanaman apa yang sesuai?",
-      s_weather: "Bagaimana cuaca ladang?",
-      s_pests: "Kenalpasti masalah perosak",
-      s_advice: "Nasihat pertanian umum"
+      s_crops: "Faktor-faktor yang mempengaruhi kadar penyakit padi?",
+      s_weather: "Bagaimanakah cuaca mempengaruhi penyakit tanaman padi?",
+      s_pests: "Apakah penyakit yang paling biasa ditemui di sawah padi?",
+      s_advice: "Apakah simptom-simptom yang menunjukkan tanaman padi tidak sihat?"
     }
   }
 };
