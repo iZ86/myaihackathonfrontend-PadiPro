@@ -518,7 +518,7 @@ export default function ChatArea() {
         className={`grow min-h-0 overflow-y-auto flex flex-col-reverse no-scrollbar mask-[linear-gradient(to_bottom,transparent_0px,black_48px,black_calc(100%-8px))] transition-opacity duration-300 ${isReady ? "opacity-100" : "opacity-0"}`}
         style={{ overflowAnchor: "none" }}
       >
-        <div className="flex flex-col justify-end min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-24">
+        <div className={`flex flex-col ${messages.length === 0 && !isLoadingHistory ? "justify-center" : "justify-end"} min-h-full max-w-3xl mx-auto w-full px-4 pt-2 pb-30`}>
           <AnimatePresence initial={false}>
             {/* ── Skeleton loading ── */}
             {isLoadingHistory ? (
@@ -571,7 +571,7 @@ export default function ChatArea() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="relative flex flex-col items-center justify-start text-center pt-8 pb-4"
+                className="relative flex flex-col items-center justify-center text-center py-4"
               >
                 {/* Ambient orbs */}
                 <motion.div
